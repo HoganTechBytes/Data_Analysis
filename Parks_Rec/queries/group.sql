@@ -1,5 +1,10 @@
--- GROUP BY and ORDER BY EXAMPLES --
--- This is practice, and some common mistakes are included for learning purposes. --
+/* GROUP BY and ORDER BY EXAMPLES
+   This is practice, and some common mistakes are included for learning purposes.
+   
+   When using ORDER BY, you can use DESC to sort in descending order. By default, ORDER BY sorts in ascending order.
+   
+   When using GROUP BY, all selected columns must either be included in the GROUP BY clause or be used in an aggregate function (like COUNT, AVG, SUM, etc.).
+*/
 
 USE Parks_and_Recreation;
 
@@ -39,3 +44,8 @@ USE Parks_and_Recreation;
    SELECT occupation, salary
    FROM employee_salary
    GROUP BY occupation, salary; */
+
+-- ORDER BY with multiple columns --
+/* SELECT *
+   FROM employee_demographics
+   ORDER BY first_name, age, gender; */
