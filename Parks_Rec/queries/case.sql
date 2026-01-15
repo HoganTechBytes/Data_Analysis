@@ -25,7 +25,7 @@ CASE
     ELSE salary
 END AS 'New Salary',
 CASE 
-    WHEN dept_id = 6 THEN ROUND((salary * 1.10), 2)
+    WHEN dept_id = 6 THEN ROUND((salary * .10), 2)
     ELSE 0.00
 END AS Bonus
 FROM employee_salary
