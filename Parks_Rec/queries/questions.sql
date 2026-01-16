@@ -15,7 +15,6 @@ LEFT JOIN parks_departments AS dept
 GROUP BY COALESCE(dept.department_name, 'Unassigned')
 ORDER BY total_payroll_cost DESC;
 
-
 /* Q3: What is avg payroll cost per department (including Unassigned)? */
 SELECT ROUND(AVG(sal.salary), 2) AS avg_payroll_per_employee, COALESCE(dept.department_name, 'Unassigned') AS department_name
 FROM employee_salary AS sal
@@ -43,3 +42,8 @@ FROM employee_salary AS sal
 LEFT JOIN employee_demographics AS dem
     ON sal.employee_id = dem.employee_id
 WHERE dem.employee_id IS NULL;
+
+/* Q6: Which employees are missing a department assignment? */
+SELECT employee_id, CONCAT(last_name, ", ", first_name) AS full_name, dept_id
+FROM employee_salary
+WHERE dept_id IS NULL;
