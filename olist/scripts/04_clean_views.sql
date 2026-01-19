@@ -16,36 +16,35 @@ USE olist;
 DROP VIEW IF EXISTS v_products_clean;
 
 CREATE VIEW v_products_clean AS
-SELECT
-    product_id,
-    product_category_name,
-    product_name_lenght AS product_name_length,
-    product_description_lenght AS product_description_length,
-    product_photos_qty,
-    product_weight_g,
-    product_length_cm,
-    product_height_cm,
-    product_width_cm
+    SELECT
+        product_id,
+        product_category_name,
+        product_name_lenght AS product_name_length,
+        product_description_lenght AS product_description_length,
+        product_photos_qty,
+        product_weight_g,
+        product_length_cm,
+        product_height_cm,
+        product_width_cm
 FROM products;
 
 DROP VIEW IF EXISTS v_orders_clean;
 
 CREATE VIEW v_orders_clean AS
-SELECT
-    order_id,
-    customer_id,
-    order_status,
-
-    order_purchase_timestamp,
-    order_approved_at,
-    order_delivered_carrier_date,
-    order_delivered_customer_date,
-    order_estimated_delivery_date,
+    SELECT
+        order_id,
+        customer_id,
+        order_status,
+        order_purchase_timestamp,
+        order_approved_at,
+        order_delivered_carrier_date,
+        order_delivered_customer_date,
+        order_estimated_delivery_date,
 
     -- Derived columns --
     CASE
-      WHEN order_delivered_customer_date IS NULL THEN NULL
-      ELSE TIMESTAMPDIFF(DAY, order_purchase_timestamp, order_delivered_customer_date)
+        WHEN order_delivered_customer_date IS NULL THEN NULL
+        ELSE TIMESTAMPDIFF(DAY, order_purchase_timestamp, order_delivered_customer_date)
     END AS delivery_days,
 
     CASE
@@ -81,3 +80,12 @@ CREATE VIEW v_payments_clean AS
         payment_installments,
         payment_value
 FROM order_payments;
+
+DROP VIEW IF EXISTS v_customers_clean AS
+    Select
+        customer_id,
+        customer_unique_id,
+        customer_zip_code_prefix,
+        customer_city,
+        customer_state
+FROM customers;
