@@ -13,6 +13,8 @@ Notes:
 
 USE olist;
 
+-- Question: How many orders were purchased each month (based on purchase timestamp)? --
+
 SELECT
     DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS order_month,
     COUNT(*) AS order_count
@@ -21,6 +23,8 @@ WHERE order_purchase_timestamp IS NOT NULL
 GROUP BY order_month
 ORDER BY order_month;
 
+-- Question: Of the orders purchased each month, how many were ultimately delivered? --
+
 SELECT
     DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS order_month,
     COUNT(*) AS order_count
@@ -28,6 +32,8 @@ FROM v_orders_clean
 WHERE order_purchase_timestamp IS NOT NULL AND order_status = 'delivered'
 GROUP BY order_month
 ORDER BY order_month;
+
+-- Question: For each purchase month, what were total orders, delivered orders, and the delivered rate (% delivered)? --
 
 SELECT
     DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS purchase_month,
