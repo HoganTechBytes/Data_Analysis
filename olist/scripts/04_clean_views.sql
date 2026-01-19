@@ -81,7 +81,9 @@ CREATE VIEW v_payments_clean AS
         payment_value
 FROM order_payments;
 
-DROP VIEW IF EXISTS v_customers_clean AS
+DROP VIEW IF EXISTS v_customers_clean
+
+CREATE VIEW v_customers_clean AS
     Select
         customer_id,
         customer_unique_id,
