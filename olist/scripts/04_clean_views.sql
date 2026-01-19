@@ -54,3 +54,19 @@ SELECT
         ELSE 0
     END AS is_late
 FROM orders;
+
+DROP VIEW IF EXISTS v_order_items_clean;
+
+CREATE VIEW v_order_items_clean AS
+    SELECT 
+        order_id,
+        order_item_id,
+        product_id,
+        seller_id,
+        shipping_limit_date,
+        price,
+        freight_value,
+
+        -- Derived column --
+        (price + freight_value) AS item_total
+FROM order_items;
