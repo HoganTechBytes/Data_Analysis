@@ -70,3 +70,14 @@ CREATE VIEW v_order_items_clean AS
         -- Derived column --
         (price + freight_value) AS item_total
 FROM order_items;
+
+DROP VIEW IF EXISTS v_payments_clean;
+
+CREATE VIEW v_payments_clean AS
+    SELECT 
+        order_id,
+        payment_sequential,
+        payment_type,
+        payment_installments,
+        payment_value
+FROM order_payments;
