@@ -91,3 +91,16 @@ CREATE VIEW v_customers_clean AS
         customer_city,
         customer_state
 FROM customers;
+
+DROP VIEW IF EXISTS v_reviews_clean;
+
+CREATE VIEW v_reviews_clean AS
+    SELECT
+        review_id,
+        order_id,
+        review_score,
+        review_comment_title,
+        review_comment_message,
+        review_creation_date,
+        review_answer_timestamp
+FROM order_reviews;
