@@ -66,3 +66,15 @@ INNER JOIN v_payments_clean AS p
 WHERE o.order_purchase_timestamp IS NOT NULL
 GROUP BY purchase_month
 ORDER BY purchase_month;
+
+/*==========================================================================================
+    So what?
+    - Revenue growth is mainly driven by higher order volume, since delivered AOV stays 
+      relatively stable (~150–175).
+    - Delivered rate stabilizes in the mid-to-high 90% range across 2017–2018, suggesting
+      strong fulfillment completion.
+    - October 2016 has a notably lower delivered rate (~82%), which may indicate early
+      operational instability or data quality issues.
+    - September/October 2018 appear to be incomplete months (very low volume, 0% delivered)
+      and should be excluded from trend conclusions.
+==========================================================================================*/
