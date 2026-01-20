@@ -36,3 +36,29 @@ ORDER BY purchase_month;
     - 2018-09 and 2018-10 are unusually low and likely reflect an incomplete dataset tail, not
       true demand collapse.
 =============================================================================================*/
+
+-- Question: For each purchase month, what are total orders, delivered orders, total revenue,
+-- and AOV (total vs delivered)?
+
+SELECT
+    DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
+
+    COUNT(DISTINCT o.order_id) AS total_orders,
+    COUNT(
+        DISTINCT CASE WHEN o.order_status = 'delivered' THEN o.order_id END
+    ) AS delivered_orders,
+
+    ROUND(SUM(p.payment_value), 2) AS total_revenue,
+    ROUND(
+        SUM(p.payment_value) / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
+    ) AS aov_total,
+    ROUND(
+        SUM(p.payment_value) / NULLIF(COUNT(DISTINCT CASE WHEN o.order_status = 'delivered'
+        THEN o.order_id END), 0), 2
+    ) AS aov_delivered
+FROM v_orders_clean AS o
+INNER JOIN v_payments_clean AS p
+    ON o.order_id = p.order_id
+WHERE o.order_purchase_timestamp IS NOT NULL
+GROUP BY purchase_month
+ORDER BY purchase_month;
