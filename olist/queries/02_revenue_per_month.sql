@@ -55,7 +55,11 @@ SELECT
     ROUND(
         SUM(p.payment_value) / NULLIF(COUNT(DISTINCT CASE WHEN o.order_status = 'delivered'
         THEN o.order_id END), 0), 2
-    ) AS aov_delivered
+    ) AS aov_delivered,
+    ROUND(
+        COUNT(DISTINCT CASE WHEN o.order_status = 'delivered' THEN o.order_id END)
+        / NULLIF(COUNT(DISTINCT o.order_id), 0) * 100, 2
+        ) AS pct_orders_delivered
 FROM v_orders_clean AS o
 INNER JOIN v_payments_clean AS p
     ON o.order_id = p.order_id
