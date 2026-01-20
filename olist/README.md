@@ -92,10 +92,10 @@ When a schema uses a bridge table for many-to-many relationships, common naming 
 ---
 
 ## Project Status
-✅ Dataset downloaded  
-🔄 Importing into MySQL  
-⏳ Business question queries in progress  
-⏳ Dashboard build (Power BI / Tableau) planned
+   Dataset downloaded  
+   Importing into MySQL  
+   Business question queries in progress  
+   Dashboard build (Power BI / Tableau) planned
 
 
 
