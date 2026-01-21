@@ -1,18 +1,18 @@
-/*
-Business Question:
-- How much revenue do we generate per month (payments-based)?
+/*===========================================================================================
+    Business Question:
+    - How much revenue do we generate per month (payments-based)?
 
-Why it matters:
-- Shows revenue trend over time and seasonality
-- Lets us compare revenue trend vs order volume trend
+    Why it matters:
+    - Shows revenue trend over time and seasonality
+    - Lets us compare revenue trend vs order volume trend
 
-Definition:
-- Revenue = SUM(payment_value) from v_payments_clean
-- Month = purchase month from v_orders_clean (order_purchase_timestamp)
+    Definition:
+    - Revenue = SUM(payment_value) from v_payments_clean
+    - Month = purchase month from v_orders_clean (order_purchase_timestamp)
 
-Caveat:
-- Dataset tail months may be incomplete
-*/
+    Caveat:
+    - Dataset tail months may be incomplete
+===========================================================================================*/
 
 USE olist;
 
