@@ -29,15 +29,12 @@ GROUP BY purchase_month
 ORDER BY purchase_month;
 
 /*===========================================================================================
-    So what?
+    #1 So what?
 
-    - Baseline: Late deliveries are usually under ~10% of delivered orders (most months).
-      Spikes / anomalies: There are clear late-rate surges:
-        - Nov 2017: 14.31%
-        - Feb 2018: 15.99%
-        - Mar 2018: 21.36% (highest)
-        - Aug 2018: 10.39%
-
-    - Interpretation: Those spikes suggest periods of operational strain (seasonality,
-      backlog, logistics bottlenecks), not a constant problem.
+   - Late deliveries are usually under ~10% of delivered orders, suggesting lateness is not
+     constant across the dataset.
+   - There are clear spikes (Nov 2017, Feb–Mar 2018, Aug 2018), indicating periods of
+     operational strain or seasonality.
+   - Very small early months (2016-09, 2016-12) are noise due to low volume and shouldn’t
+     drive conclusions.
 ===========================================================================================*/
