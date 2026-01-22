@@ -120,3 +120,16 @@ LIMIT 10;
     - Next step: investigate what changed in spike months (seller mix, product categories,
       freight/distance, or regional delivery patterns).
 ===========================================================================================*/
+/*===========================================================================================
+    #4 Business question:
+    Are spike months associated with higher freight costs?
+
+    Why it matters:
+    - Higher freight cost can signal longer routes, heavier orders, or logistics strain.
+    - Helps explain why certain months see late-delivery spikes.
+
+    Definition:
+    - Month = purchase month from v_orders_clean (order_purchase_timestamp)
+    - Freight = SUM(freight_value) from v_order_items_clean
+    - Avg freight per delivered order = total_freight / delivered_orders
+===========================================================================================*/
