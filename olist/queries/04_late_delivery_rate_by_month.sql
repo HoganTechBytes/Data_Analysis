@@ -144,7 +144,6 @@ SELECT
         100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
         / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
     ) AS late_delivery_rate_pct,
-
     ROUND(SUM(oi.freight_value), 2) AS total_freight_value,
     ROUND(
         SUM(oi.freight_value) / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
