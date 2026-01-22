@@ -106,8 +106,7 @@ SELECT
     COUNT(*) AS review_count,
 
     ROUND(
-        100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY o.is_late),
-        2
+        100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY o.is_late), 2
     ) AS pct_within_status
 FROM v_orders_clean AS o
 INNER JOIN v_reviews_clean AS r
@@ -129,9 +128,41 @@ ORDER BY o.is_late, r.review_score;
      reviews toward negative outcomes.
 ===========================================================================================*/
 
+-- Question: What share of low reviews (1–2 stars) come from late vs on-time deliveries? --
+
+SELECT
+    CASE
+        WHEN o.is_late = 0 THEN 'On Time'
+        WHEN o.is_late = 1 THEN 'Late'
+        ELSE 'Unknown'
+    END AS delivery_status,
+
+    COUNT(*) AS low_review_count,
+
+    ROUND(
+        100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2
+    ) AS pct_of_all_low_reviews
+FROM v_orders_clean AS o
+INNER JOIN v_reviews_clean AS r
+    ON r.order_id = o.order_id
+WHERE o.order_status = 'delivered'
+    AND o.is_late IS NOT NULL
+    AND r.review_score IS NOT NULL
+    AND r.review_score <= 2
+GROUP BY o.is_late, delivery_status
+ORDER BY o.is_late;
+
 /*===========================================================================================
     Combined insight:
     Delivery timeliness is strongly associated with customer satisfaction. Late deliveries
-    are rare (7.98% of reviewed orders) but drive much worse ratings and higher comment
-    rates, making them a high-leverage service-quality improvement area.
+    are rare (7.98% of reviewed orders) but have much worse outcomes:
+      - Avg rating: 2.57 late vs 4.30 on-time
+      - Low-rating rate (1–2 stars): 54.06% late vs 9.18% on-time
+      - Comment rate: 55.52% late vs 39.30% on-time
+    Late orders account for 33.82% of all 1–2 star reviews despite being a small share of
+    reviewed deliveries, making late delivery reduction a high-leverage quality improvement.
+
+    Analyst workflow note:
+    This analysis was iterative: each query answered one question, then used the results to
+    refine the next question and strengthen the final conclusions with supporting evidence.
 ===========================================================================================*/
