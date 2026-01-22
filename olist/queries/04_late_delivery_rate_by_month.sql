@@ -81,3 +81,42 @@ ORDER BY purchase_month;
     - Very small early months (2016-09, 2016-12) are low-volume noise and shouldn’t drive
       trend conclusions.
 ===========================================================================================*/
+/*===========================================================================================
+    #3 Business question:
+    Are late deliveries worse in high-volume months?
+
+    Why it matters:
+    - Tests whether late deliveries increase when order volume increases (capacity strain).
+    - Helps distinguish seasonality effects from isolated operational issues.
+
+    Definition:
+    - Volume = delivered_orders per purchase_month
+    - Late rate = late_delivered_orders / delivered_orders
+===========================================================================================*/
+
+SELECT
+    DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS purchase_month,
+    COUNT(*) AS delivered_orders,
+    SUM(CASE WHEN is_late = 1 THEN 1 ELSE 0 END) AS late_delivered_orders,
+    ROUND(
+        100.0 * SUM(CASE WHEN is_late = 1 THEN 1 ELSE 0 END) / COUNT(*), 2
+    ) AS late_delivery_rate_pct
+FROM v_orders_clean
+WHERE order_status = 'delivered'
+    AND order_purchase_timestamp IS NOT NULL
+    and is_late IS NOT NULL
+GROUP BY purchase_month
+ORDER BY delivered_orders DESC
+LIMIT 10;
+
+/*===========================================================================================
+    #3 So what?
+    - High order volume does not consistently produce high late-delivery rates (e.g., some
+      high-volume months still have low late rates).
+    - However, several peak-volume months also show elevated lateness (Nov 2017, Feb–Mar
+      2018), suggesting volume may contribute but is not the only driver.
+    - Late delivery spikes appear event-driven or operationally specific rather than a
+      predictable “more orders = more late deliveries” relationship.
+    - Next step: investigate what changed in spike months (seller mix, product categories,
+      freight/distance, or regional delivery patterns).
+===========================================================================================*/
