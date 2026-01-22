@@ -133,3 +133,40 @@ LIMIT 10;
     - Freight = SUM(freight_value) from v_order_items_clean
     - Avg freight per delivered order = total_freight / delivered_orders
 ===========================================================================================*/
+
+SELECT
+    DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
+    
+    COUNT(DISTINCT o.order_id) AS delivered_orders,
+    COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END) AS late_delivered_orders,
+
+    ROUND(
+        100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
+        / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
+    ) AS late_delivery_rate_pct,
+
+    ROUND(SUM(oi.freight_value), 2) AS total_freight_value,
+    ROUND(
+        SUM(oi.freight_value) / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
+    ) AS avg_freight_per_order
+FROM v_orders_clean AS o
+INNER JOIN v_order_items_clean AS oi
+    ON oi.order_id = o.order_id
+WHERE o.order_status = 'delivered'
+    AND o.order_purchase_timestamp IS NOT NULL
+    AND o.is_late IS NOT NULL
+GROUP BY purchase_month
+ORDER BY late_delivered_orders DESC
+LIMIT 10;
+
+/*===========================================================================================
+    #4 So what?
+    - Spike months with high late-delivery rates do not consistently show higher average
+      freight costs per order.
+    - Some months have higher freight costs but low late-delivery rates (e.g., 2018-07),
+      suggesting freight cost alone does not explain delivery delays.
+    - Late spikes occur even when freight cost is relatively low (e.g., 2018-02), indicating
+      other operational factors are likely driving delays.
+    - Next step: investigate other drivers such as seller mix, product categories, and
+      geographic delivery patterns during spike months.
+===========================================================================================*/
