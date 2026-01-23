@@ -180,7 +180,12 @@ LIMIT 10;
 ===========================================================================================*/
 
 /*===========================================================================================
-    Reusable scope definitions for spike-month drilldowns (#5–#7)
+    #5 Business question:
+    Are late-delivery spikes driven by specific product categories?
+
+    Scope:
+    - Spike months: 2017-11, 2018-02, 2018-03, 2018-08
+    - Top 5 categories per month by late_delivery_rate_pct (minimum 50 delivered orders)
 ===========================================================================================*/
 
 WITH spike_months AS (
@@ -189,22 +194,7 @@ WITH spike_months AS (
     SELECT '2018-03' UNION ALL
     SELECT '2018-08'
 ),
-high_impact_categories AS (
-    SELECT 'cama_mesa_banho' AS product_category_name UNION ALL
-    SELECT 'beleza_saude' UNION ALL
-    SELECT 'informatica_acessorios' UNION ALL
-    SELECT 'esporte_lazer'
-)
-
-/*===========================================================================================
-    #5 Business question:
-    Are late-delivery spikes driven by specific product categories?
-
-    Scope:
-    - Spike months only (see spike_months CTE)
-    - Top 5 categories per month by late_delivery_rate_pct (minimum 50 delivered orders)
-===========================================================================================*/
-, category_month AS (
+category_month AS (
     SELECT
         DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
         p.product_category_name,
@@ -216,29 +206,31 @@ high_impact_categories AS (
             100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
             / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
         ) AS late_delivery_rate_pct
-    FROM v_orders_clean AS o
-    INNER JOIN v_order_items_clean AS oi
+    FROM v_orders_clean o
+    INNER JOIN v_order_items_clean oi
         ON oi.order_id = o.order_id
-    INNER JOIN v_products_clean AS p
+    INNER JOIN v_products_clean p
         ON p.product_id = oi.product_id
-    INNER JOIN spike_months AS sm
+    INNER JOIN spike_months sm
         ON sm.purchase_month = DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m')
     WHERE o.order_status = 'delivered'
       AND o.order_purchase_timestamp IS NOT NULL
       AND o.is_late IS NOT NULL
       AND p.product_category_name IS NOT NULL
       AND TRIM(p.product_category_name) <> ''
-    GROUP BY purchase_month, p.product_category_name
+    GROUP BY
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m'),
+        p.product_category_name
     HAVING delivered_orders >= 50
 ),
-ranked_categories AS (
+ranked AS (
     SELECT
-        *,
+        cm.*,
         ROW_NUMBER() OVER (
-            PARTITION BY purchase_month
-            ORDER BY late_delivery_rate_pct DESC
+            PARTITION BY cm.purchase_month
+            ORDER BY cm.late_delivery_rate_pct DESC
         ) AS rn
-    FROM category_month
+    FROM category_month cm
 )
 SELECT
     purchase_month,
@@ -246,7 +238,7 @@ SELECT
     delivered_orders,
     late_delivered_orders,
     late_delivery_rate_pct
-FROM ranked_categories
+FROM ranked
 WHERE rn <= 5
 ORDER BY purchase_month, late_delivery_rate_pct DESC;
 
@@ -267,15 +259,17 @@ ORDER BY purchase_month, late_delivery_rate_pct DESC;
     #6 Business question:
     Which product categories contribute the most late deliveries during spike months?
 
-    Why it matters:
-    - Late rate highlights “risk,” but late count shows where the operational impact is.
-    - Prioritizes categories that drive the most late deliveries (actionable focus).
-
     Scope:
-    - Spike months only (see spike_months CTE)
+    - Spike months: 2017-11, 2018-02, 2018-03, 2018-08
 ===========================================================================================*/
 
-WITH category_month_6 AS (
+WITH spike_months AS (
+    SELECT '2017-11' AS purchase_month UNION ALL
+    SELECT '2018-02' UNION ALL
+    SELECT '2018-03' UNION ALL
+    SELECT '2018-08'
+),
+category_month AS (
     SELECT
         DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
         p.product_category_name,
@@ -287,25 +281,27 @@ WITH category_month_6 AS (
             100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
             / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
         ) AS late_delivery_rate_pct
-    FROM v_orders_clean AS o
-    INNER JOIN v_order_items_clean AS oi
+    FROM v_orders_clean o
+    INNER JOIN v_order_items_clean oi
         ON oi.order_id = o.order_id
-    INNER JOIN v_products_clean AS p
+    INNER JOIN v_products_clean p
         ON p.product_id = oi.product_id
-    INNER JOIN spike_months AS sm
+    INNER JOIN spike_months sm
         ON sm.purchase_month = DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m')
     WHERE o.order_status = 'delivered'
       AND o.order_purchase_timestamp IS NOT NULL
       AND o.is_late IS NOT NULL
       AND p.product_category_name IS NOT NULL
       AND TRIM(p.product_category_name) <> ''
-    GROUP BY purchase_month, p.product_category_name
+    GROUP BY
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m'),
+        p.product_category_name
 ),
 totals AS (
     SELECT
         purchase_month,
         SUM(late_delivered_orders) AS total_late_delivered_orders
-    FROM category_month_6
+    FROM category_month
     GROUP BY purchase_month
 ),
 ranked AS (
@@ -320,8 +316,8 @@ ranked AS (
             PARTITION BY cm.purchase_month
             ORDER BY cm.late_delivered_orders DESC
         ) AS rn
-    FROM category_month_6 AS cm
-    INNER JOIN totals AS t
+    FROM category_month cm
+    INNER JOIN totals t
         ON t.purchase_month = cm.purchase_month
 )
 SELECT
@@ -334,6 +330,7 @@ SELECT
 FROM ranked
 WHERE rn <= 10
 ORDER BY purchase_month, late_delivered_orders DESC;
+
 
 /*===========================================================================================
     #6 So what?
@@ -353,19 +350,27 @@ ORDER BY purchase_month, late_delivered_orders DESC;
     Within high-impact categories, are late deliveries concentrated among specific sellers
     during spike months?
 
-    Why it matters:
-    - If lateness is seller-concentrated, targeted seller interventions may reduce delays.
-    - If lateness is spread across sellers, root cause is likely systemic (logistics/capacity).
-
     Scope:
-    - Spike months only (see spike_months CTE)
-    - High-impact categories only (see high_impact_categories CTE)
+    - Spike months: 2017-11, 2018-02, 2018-03, 2018-08
+    - Categories: cama_mesa_banho, beleza_saude, informatica_acessorios, esporte_lazer
 ===========================================================================================*/
 
 SET @top_n := 10;
 SET @min_late_orders := 10;
 
-WITH seller_month_category AS (
+WITH spike_months AS (
+    SELECT '2017-11' AS purchase_month UNION ALL
+    SELECT '2018-02' UNION ALL
+    SELECT '2018-03' UNION ALL
+    SELECT '2018-08'
+),
+high_impact_categories AS (
+    SELECT 'cama_mesa_banho' AS product_category_name UNION ALL
+    SELECT 'beleza_saude' UNION ALL
+    SELECT 'informatica_acessorios' UNION ALL
+    SELECT 'esporte_lazer'
+),
+seller_month_category AS (
     SELECT
         DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
         p.product_category_name,
@@ -378,14 +383,14 @@ WITH seller_month_category AS (
             100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
             / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
         ) AS late_delivery_rate_pct
-    FROM v_orders_clean AS o
-    INNER JOIN v_order_items_clean AS oi
+    FROM v_orders_clean o
+    INNER JOIN v_order_items_clean oi
         ON oi.order_id = o.order_id
-    INNER JOIN v_products_clean AS p
+    INNER JOIN v_products_clean p
         ON p.product_id = oi.product_id
-    INNER JOIN spike_months AS sm
+    INNER JOIN spike_months sm
         ON sm.purchase_month = DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m')
-    INNER JOIN high_impact_categories AS hic
+    INNER JOIN high_impact_categories hic
         ON hic.product_category_name = p.product_category_name
     WHERE o.order_status = 'delivered'
       AND o.order_purchase_timestamp IS NOT NULL
@@ -393,7 +398,7 @@ WITH seller_month_category AS (
       AND p.product_category_name IS NOT NULL
       AND TRIM(p.product_category_name) <> ''
     GROUP BY
-        purchase_month,
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m'),
         p.product_category_name,
         oi.seller_id
 ),
@@ -401,8 +406,8 @@ ranked AS (
     SELECT
         smc.*,
         ROW_NUMBER() OVER (
-            PARTITION BY purchase_month, product_category_name
-            ORDER BY late_delivered_orders DESC
+            PARTITION BY smc.purchase_month, smc.product_category_name
+            ORDER BY smc.late_delivered_orders DESC
         ) AS rn
     FROM seller_month_category smc
 )
@@ -417,6 +422,7 @@ FROM ranked
 WHERE rn <= @top_n
   AND late_delivered_orders >= @min_late_orders
 ORDER BY purchase_month, product_category_name, late_delivered_orders DESC;
+
 
 /*===========================================================================================
     #7 So what?
