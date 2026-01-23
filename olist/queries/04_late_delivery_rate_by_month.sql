@@ -169,3 +169,68 @@ LIMIT 10;
     - Next step: investigate other drivers such as seller mix, product categories, and
       geographic delivery patterns during spike months.
 ===========================================================================================*/
+/*===========================================================================================
+    #5 Business question:
+    Are late-delivery spikes driven by specific product categories?
+
+    Scope:
+    - Spike months: 2017-11, 2018-02, 2018-03, 2018-08
+    - Top 5 categories per month by late_delivery_rate_pct (minimum 50 delivered orders)
+===========================================================================================*/
+
+WITH category_month AS (
+    SELECT
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
+        p.product_category_name,
+
+        COUNT(DISTINCT o.order_id) AS delivered_orders,
+        COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END) AS late_delivered_orders,
+
+        ROUND(
+            100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
+            / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
+        ) AS late_delivery_rate_pct
+    FROM v_orders_clean AS o
+    INNER JOIN v_order_items_clean AS oi
+        ON oi.order_id = o.order_id
+    INNER JOIN v_products_clean AS p
+        ON p.product_id = oi.product_id
+    WHERE o.order_status = 'delivered'
+      AND o.order_purchase_timestamp IS NOT NULL
+      AND o.is_late IS NOT NULL
+      AND DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') IN ('2017-11', '2018-02', '2018-03', '2018-08')
+      AND p.product_category_name IS NOT NULL
+    GROUP BY purchase_month, p.product_category_name
+    HAVING delivered_orders >= 50
+),
+ranked AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY purchase_month
+            ORDER BY late_delivery_rate_pct DESC
+        ) AS rn
+    FROM category_month
+)
+SELECT
+    purchase_month,
+    product_category_name,
+    delivered_orders,
+    late_delivered_orders,
+    late_delivery_rate_pct
+FROM ranked
+WHERE rn <= 5
+ORDER BY purchase_month, late_delivery_rate_pct DESC;
+
+/*===========================================================================================
+    #5 So what?
+    - Spike months show specific categories with unusually high late-delivery rates rather
+      than a uniform increase across all products.
+    - Several categories repeat across spike months (e.g., cama_mesa_banho, bebes,
+      relogios_presentes, construcao_ferramentas_construcao), suggesting category or
+      fulfillment-specific drivers.
+    - Some high-late categories also have meaningful volume (hundreds of orders), making them
+      likely contributors to overall monthly lateness.
+    - Next step: quantify category contribution (share of late orders) to identify which
+      categories drive the most late deliveries in spike months.
+===========================================================================================*/
