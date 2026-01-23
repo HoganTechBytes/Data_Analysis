@@ -318,4 +318,103 @@ ORDER BY purchase_month, late_delivered_orders DESC;
       correlational.
     - Next step: isolate whether delays are driven by specific sellers or regions within the
       high-impact categories.
-*/===========================================================================================
+===========================================================================================*/
+/*===========================================================================================
+    #7 Business question:
+    Within high-impact categories, are late deliveries concentrated among specific sellers
+    during spike months?
+
+    Why it matters:
+    - If lateness is seller-concentrated, targeted seller interventions may reduce delays.
+    - If lateness is spread across sellers, root cause is likely systemic (logistics/capacity).
+
+    Spike Months:
+    - 2017-11
+    - 2018-02
+    - 2018-03
+    - 2018-08
+===========================================================================================*/
+
+SET @top_n := 10;
+SET @min_late_orders := 10;
+
+WITH seller_month_category AS (
+    SELECT
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
+        p.product_category_name,
+        oi.seller_id,
+
+        COUNT(DISTINCT o.order_id) AS delivered_orders,
+        COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END) AS late_delivered_orders,
+
+        ROUND(
+            100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
+            / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
+        ) AS late_delivery_rate_pct
+    FROM v_orders_clean AS o
+    INNER JOIN v_order_items_clean AS oi
+        ON oi.order_id = o.order_id
+    INNER JOIN v_products_clean AS p
+        ON p.product_id = oi.product_id
+    WHERE o.order_status = 'delivered'
+      AND o.order_purchase_timestamp IS NOT NULL
+      AND o.is_late IS NOT NULL
+
+      -- Spike months only
+      AND DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m')
+          IN ('2017-11', '2018-02', '2018-03', '2018-08')
+
+      -- High-impact categories (from #6)
+      AND p.product_category_name IN (
+          'cama_mesa_banho',
+          'beleza_saude',
+          'informatica_acessorios',
+          'esporte_lazer'
+      )
+
+      -- QA: avoid blanks / nulls
+      AND p.product_category_name IS NOT NULL
+      AND TRIM(p.product_category_name) <> ''
+    GROUP BY
+        purchase_month,
+        p.product_category_name,
+        oi.seller_id
+),
+ranked AS (
+    SELECT
+        smc.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY purchase_month, product_category_name
+            ORDER BY late_delivered_orders DESC
+        ) AS rn
+    FROM seller_month_category smc
+)
+SELECT
+    purchase_month,
+    product_category_name,
+    seller_id,
+    delivered_orders,
+    late_delivered_orders,
+    late_delivery_rate_pct
+FROM ranked
+WHERE rn <= @top_n
+  AND late_delivered_orders >= @min_late_orders
+ORDER BY purchase_month, product_category_name, late_delivered_orders DESC;
+
+/*===========================================================================================
+    So what?
+    - During spike months (2017-11, 2018-02, 2018-03, 2018-08), late deliveries within the
+      high-impact categories appear to be seller-concentrated rather than evenly distributed.
+    - Multiple sellers recur across spike months (especially in cama_mesa_banho), suggesting
+      the spike behavior is driven by a small subset of sellers with repeated fulfillment
+      delays.
+    - This supports targeted mitigation such as prioritizing seller performance reviews,
+      tighter shipping SLAs, or updated delivery estimates for high-risk seller/category
+      combinations.
+    - Root cause is not proven here and may involve multiple factors (seller capacity,
+      carrier performance, geography, or product handling complexity), so conclusions remain
+      correlational.
+    - Next step: quantify “repeat offenders” by ranking sellers across spike months by total
+      late orders and contribution share, then optionally validate whether delays cluster by
+      region.
+===========================================================================================*/
