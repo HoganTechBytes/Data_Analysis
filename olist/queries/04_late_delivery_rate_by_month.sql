@@ -441,3 +441,111 @@ ORDER BY purchase_month, product_category_name, late_delivered_orders DESC;
       late orders and contribution share, then optionally validate whether delays cluster by
       region.
 ===========================================================================================*/
+/*===========================================================================================
+    #8 Business question:
+    Across spike months, which sellers in the high-impact categories account for the most
+    late delivered orders (repeat offenders + contribution share)?
+
+    Why it matters:
+    - Converts seller-level findings into an actionable priority list.
+    - Identifies whether a small set of sellers drive a large share of late deliveries.
+    - Supports targeted seller interventions or policy changes (SLAs, ETAs, messaging).
+
+    Scope:
+    - Spike months: 2017-11, 2018-02, 2018-03, 2018-08
+    - High-impact categories: cama_mesa_banho, beleza_saude, informatica_acessorios, esporte_lazer
+
+    QA:
+    - Joins are item-level; use DISTINCT order_id for delivered/late order counts.
+===========================================================================================*/
+
+-- Impact threshhold - Can be tuned as needed --
+SET @min_late_orders := 25;
+
+WITH spike_months AS (
+    SELECT '2017-11' AS purchase_month UNION ALL
+    SELECT '2018-02' UNION ALL
+    SELECT '2018-03' UNION ALL
+    SELECT '2018-08'
+),
+high_impact_categories AS (
+    SELECT 'cama_mesa_banho' AS product_category_name UNION ALL
+    SELECT 'beleza_saude' UNION ALL
+    SELECT 'esporte_lazer' UNION ALL
+    SELECT 'informatica_acessorios'
+),
+orders_in_scope AS (
+    SELECT DISTINCT 
+        o.order_id,
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') as purchase_month,
+        o.is_late,
+        oi.seller_id,
+        p.product_category_name
+    FROM v_orders_clean AS o
+    INNER JOIN v_order_items_clean AS oi
+        ON oi.order_id = o.order_id
+    INNER JOIN v_products_clean AS p
+        ON p.product_id = oi.product_id
+    INNER JOIN spike_months AS sm
+        ON sm.purchase_month = DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m')
+    INNER JOIN high_impact_categories AS hic
+        ON hic.product_category_name = p.product_category_name
+    WHERE o.order_status = 'delivered'
+        AND o.order_purchase_timestamp IS NOT NULL
+        AND o.is_late IS NOT NULL
+        AND p.product_category_name IS NOT NULL
+        AND TRIM(p.product_category_name) <> ''
+),
+seller_rollup AS (
+    SELECT
+        seller_id,
+
+        COUNT(DISTINCT order_id) AS delivered_orders,
+        COUNT(DISTINCT CASE WHEN is_late = 1 THEN order_id END) AS late_delivered_orders,
+
+        ROUND(
+            100.0 * COUNT(DISTINCT CASE WHEN is_late = 1 THEN order_id END)
+            / NULLIF(COUNT(DISTINCT order_id), 0), 2
+        ) AS late_delivery_rate_pct,
+
+        COUNT(DISTINCT purchase_month) AS months_active_in_spikes,
+        MIN(purchase_month) AS first_spike_month,
+        MAX(purchase_month) AS last_spike_month
+    FROM orders_in_scope
+    GROUP BY seller_id
+),
+totals AS (
+    SELECT SUM(late_delivered_orders) AS total_late_orders_in_scope
+    FROM seller_rollup
+)
+SELECT
+    sr.seller_id,
+    sr.delivered_orders,
+    sr.late_delivered_orders,
+    sr.late_delivery_rate_pct,
+    sr.months_active_in_spikes,
+    sr.first_spike_month,
+    sr.last_spike_month,
+    ROUND(
+        100.0 * sr.late_delivered_orders / NULLIF(t.total_late_orders_in_scope, 0), 2
+    ) AS pct_of_late_orders_in_scope
+FROM seller_rollup sr
+CROSS JOIN totals t
+WHERE sr.late_delivered_orders >= @min_late_orders
+ORDER BY sr.late_delivered_orders DESC, sr.late_delivery_rate_pct DESC;
+
+/*===========================================================================================
+    So what?
+    - Late deliveries during spike months within the high-impact categories are meaningfully
+      seller-concentrated rather than evenly distributed across all sellers.
+    - Several sellers appear in multiple spike months (many active across all 4 spike
+      months), indicating repeat-offender behavior rather than a one-time surge.
+    - The largest single seller contributes 94 late orders (~6.1% of late orders in scope),
+      and the top 5 sellers contribute ~18.4% of late orders in scope, suggesting targeted
+      seller-level mitigation could reduce delays without requiring platform-wide changes.
+    - Late delivery rate matters, but late_delivered_orders (problem volume) provides the
+      most actionable prioritization for intervention.
+    - Next step: determine whether these seller issues are driven by geography
+      (seller_state → customer_state), shipping distance, or carrier/logistics constraints
+      vs seller capacity.
+===========================================================================================*/
