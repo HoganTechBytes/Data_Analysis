@@ -234,3 +234,88 @@ ORDER BY purchase_month, late_delivery_rate_pct DESC;
     - Next step: quantify category contribution (share of late orders) to identify which
       categories drive the most late deliveries in spike months.
 ===========================================================================================*/
+/*===========================================================================================
+    #6 Business question:
+    Which product categories contribute the most late deliveries during spike months?
+
+    Why it matters:
+    - Late rate highlights “risk,” but late count shows where the operational impact is.
+    - Prioritizes categories that drive the most late deliveries (actionable focus).
+
+    Scope:
+    - Spike months: 2017-11, 2018-02, 2018-03, 2018-08
+===========================================================================================*/
+
+USE olist;
+
+WITH category_month AS (
+    SELECT
+        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS purchase_month,
+        p.product_category_name,
+
+        COUNT(DISTINCT o.order_id) AS delivered_orders,
+        COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END) AS late_delivered_orders,
+
+        ROUND(
+            100.0 * COUNT(DISTINCT CASE WHEN o.is_late = 1 THEN o.order_id END)
+            / NULLIF(COUNT(DISTINCT o.order_id), 0), 2
+        ) AS late_delivery_rate_pct
+    FROM v_orders_clean AS o
+    INNER JOIN v_order_items_clean AS oi
+        ON oi.order_id = o.order_id
+    INNER JOIN v_products_clean AS p
+        ON p.product_id = oi.product_id
+    WHERE o.order_status = 'delivered'
+      AND o.order_purchase_timestamp IS NOT NULL
+      AND o.is_late IS NOT NULL
+      AND DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') IN ('2017-11', '2018-02', '2018-03', '2018-08')
+      AND p.product_category_name IS NOT NULL
+      AND TRIM(p.product_category_name) <> ''
+    GROUP BY purchase_month, p.product_category_name
+),
+totals AS (
+    SELECT
+        purchase_month,
+        SUM(late_delivered_orders) AS total_late_delivered_orders
+    FROM category_month
+    GROUP BY purchase_month
+),
+ranked AS (
+    SELECT
+        cm.*,
+        t.total_late_delivered_orders,
+        ROUND(
+            100.0 * cm.late_delivered_orders / NULLIF(t.total_late_delivered_orders, 0),
+            2
+        ) AS pct_of_late_orders_in_month,
+        ROW_NUMBER() OVER (
+            PARTITION BY cm.purchase_month
+            ORDER BY cm.late_delivered_orders DESC
+        ) AS rn
+    FROM category_month AS cm
+    INNER JOIN totals AS t
+        ON t.purchase_month = cm.purchase_month
+)
+SELECT
+    purchase_month,
+    product_category_name,
+    delivered_orders,
+    late_delivered_orders,
+    late_delivery_rate_pct,
+    pct_of_late_orders_in_month
+FROM ranked
+WHERE rn <= 10
+ORDER BY purchase_month, late_delivered_orders DESC;
+
+/*===========================================================================================
+    So what?
+    - We identified clear late-delivery spike months and the product categories most
+      associated with those spikes.
+    - This enables targeted mitigation such as setting more accurate delivery estimates or
+      proactive customer messaging for high-risk categories at checkout.
+    - Root cause is not proven here and may involve multiple factors (seller capacity, carrier
+      performance, geography, or product handling complexity), so conclusions remain
+      correlational.
+    - Next step: isolate whether delays are driven by specific sellers or regions within the
+      high-impact categories.
+*/===========================================================================================
