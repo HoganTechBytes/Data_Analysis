@@ -549,3 +549,19 @@ ORDER BY sr.late_delivered_orders DESC, sr.late_delivery_rate_pct DESC;
       (seller_state → customer_state), shipping distance, or carrier/logistics constraints
       vs seller capacity.
 ===========================================================================================*/
+/*===========================================================================================
+    Executive Summary
+    - Late delivery spikes occurred in 2017-11 and 2018-02/03/08, reaching ~21% late in
+      the worst month.
+    - Spike months align with lower average review scores, suggesting lateness impacts
+      customer sentiment.
+    - Spikes are not explained by order volume alone, and freight cost does not show a 
+      clear relationship to late delivery spikes.
+    - High-impact categories account for a meaningful share of late orders during spike
+      months.
+    - Late orders are seller-concentrated in these categories, and a small group of repeat
+      sellers contribute a significant share of late deliveries during spike periods.
+    - These results support targeted mitigation (seller performance actions and improved
+      ETA messaging) while acknowledging root cause remains correlational.
+===========================================================================================*/
+
