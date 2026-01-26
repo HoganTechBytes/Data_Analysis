@@ -29,7 +29,7 @@ USE olist;
 
 SELECT
     DATE_FORMAT(order_purchase_timestamp, '%Y-%m') AS purchase_month,
-    COUNT(*) AS order_count
+    COUNT(*) AS total_orders
 FROM v_orders_clean
 WHERE order_purchase_timestamp IS NOT NULL
 GROUP BY purchase_month
@@ -163,3 +163,14 @@ FROM v_orders_clean
 WHERE order_purchase_timestamp IS NOT NULL
 GROUP BY purchase_month
 ORDER BY purchase_month;
+
+/*===========================================================================================
+    So what?
+    - Cancellation rate helps separate “delivery performance” issues from “demand lost before
+      fulfillment.”
+    - If cancellations spike in the same months as late deliveries, it may indicate broader
+      operational stress or customer expectation issues.
+    - Next step: keep cancellation separate from late-delivery KPIs (late delivery uses
+      delivered orders only) to avoid mixing different failure modes.
+===========================================================================================*/
+
