@@ -1,50 +1,67 @@
-# Olist E-Commerce Dataset (Kaggle)
+# Olist E-Commerce Analytics Project
 
 ## Overview
-This folder contains work based on the **Olist Brazilian E-Commerce Public Dataset**, sourced from Kaggle.  
-The goal of this project is to practice **real-world SQL analysis** using a multi-table dataset (customers, orders, payments, reviews, products, sellers, and shipping).
+This project is based on the **Olist Brazilian E-Commerce Public Dataset** (Kaggle) and is used to practice **real-world analytics workflows** on a multi-table relational dataset.
 
-This dataset is commonly used in analytics portfolios because it supports realistic business questions such as:
-- customer retention / repurchase behavior
+The focus is not only on writing SQL queries, but on:
+- designing analytics-friendly schemas
+- creating clean semantic views
+- validating results with lightweight QA checks
+- handing results off to Python for downstream analysis and visualization
+
+The dataset supports realistic business questions around:
+- order and revenue trends
 - delivery performance and delays
-- review score impact factors
-- revenue and payment trends
+- customer experience and review scores
+- payment behavior
 
 ---
 
-## Customers Dataset (`olist_customers_dataset.csv`)
-The customers dataset contains customer and location-related information. It is used to:
-- link customers to their orders
-- identify delivery locations by customer location fields
-- distinguish individual purchases vs repeat customers
+## Dataset Context
+The Olist dataset includes multiple related tables covering the full e-commerce lifecycle, including:
+- customers
+- orders
+- order items
+- payments
+- reviews
+- products
+- sellers
+- shipping and delivery timestamps
 
-### Key Notes
-- Each order is assigned to a **customer_id**
-- The same person may have multiple orders, and may receive **different customer_id values** per order
-- The `customer_unique_id` field allows identification of customers who placed multiple orders (repurchases)
-
----
-
-## Data Schema
-The dataset is relational and intended to be used through joins across multiple tables.
-<img width="2486" height="1496" alt="image" src="https://github.com/user-attachments/assets/6f3297ad-958a-4d1a-b2fe-fc7ed7927e96" />
-
+Rather than querying raw tables directly, this project emphasizes **clean, analytics-oriented views** that simplify joins and reduce downstream complexity.
 
 ---
 
-## SQL Join Notes (Conventions I’m Using)
+## Relational Schema
+The dataset is fully relational and designed to be analyzed through joins across multiple tables.
 
-These notes summarize the join conventions used throughout this project. The goal is **readability**, **consistency**, and **clarity**.
+![Olist schema](https://github.com/user-attachments/assets/6f3297ad-958a-4d1a-b2fe-fc7ed7927e96)
+
+---
+
+## Schema & View Design
+
+### Clean Semantic Views (`v_*_clean`)
+To support consistent analysis, the project defines a set of **clean views** that:
+- standardize column naming
+- normalize date handling
+- expose commonly used derived fields (e.g., delivery status, lateness flags)
+- reduce repetitive join logic in analytical queries
+
+These views act as the **semantic layer** for all downstream SQL and Python analysis.
+
+---
+
+## SQL Style & Join Conventions
 
 ### Join Syntax & Formatting
+Throughout the project, SQL is written with an emphasis on **readability and consistency**:
 
-- Use explicit joins (`JOIN ... ON ...`) instead of implicit joins in the `WHERE` clause.
-- Prefer explicit join types for clarity (ex: `INNER JOIN`, `LEFT JOIN`).
-- Indent joins and join conditions so multi-table queries stay readable.
-- Capitalize SQL keywords (`SELECT`, `FROM`, `JOIN`, `WHERE`) to visually separate them from identifiers.
+- Use explicit joins (`INNER JOIN`, `LEFT JOIN`) rather than implicit joins.
+- Indent joins and conditions to keep multi-table queries readable.
+- Capitalize SQL keywords to visually separate logic from identifiers.
 
-Example style:
-
+Example:
 ```sql
 SELECT
     o.order_id,
@@ -55,23 +72,20 @@ INNER JOIN v_payments_clean AS p
 ```
 
 ### Table Alias Conventions
+Aliases are used consistently to keep queries concise:
 
-Aliases keep join-heavy queries short and readable.
+- `o`  = orders  
+- `oi` = order_items  
+- `p`  = payments  
+- `c`  = customers  
+- `pr` = products  
+- `r`  = reviews  
 
-- Use short, meaningful aliases:
-  - `o` = orders
-  - `p` = payments
-  - `oi` = order_items
-  - `c` = customers
-  - `pr` = products
-  - `r` = reviews
-- Stay consistent across queries (don’t switch alias names randomly).
-- In simple single-table queries, aliases are optional.
+Aliases are optional for simple single-table queries but are standard for joins.
 
 ### Join Column Conventions
-
-- Use consistent foreign key naming whenever possible (`customer_id`, `order_id`, `product_id`).
-- If columns overlap (ex: multiple tables have `id`), alias columns in the output:
+- Foreign keys use consistent naming (`order_id`, `customer_id`, `product_id`).
+- When column names overlap, output columns are explicitly aliased:
 
 ```sql
 SELECT
@@ -82,25 +96,39 @@ INNER JOIN v_orders_clean AS o
     ON o.customer_id = c.customer_id;
 ```
 
-### Many-to-Many Join Tables (General Pattern)
+---
 
-When a schema uses a bridge table for many-to-many relationships, common naming patterns include:
+## Analytics Workflow
 
-- `table1_table2` (often alphabetical), ex: `user_role`
-- A relationship-based name, ex: `subscriptions`, `memberships`
+### SQL Analysis
+Business-question-driven SQL queries live in `queries/` and focus on:
+- monthly order and revenue trends
+- delivery performance metrics
+- review score relationships
+
+These queries are written against clean views and are designed to be **portfolio-ready**.
+
+### Python Pipeline
+Results are exported and validated using Python scripts that:
+- connect to MySQL via SQLAlchemy
+- export query results to CSV
+- run lightweight QA checks (schema, nulls, grain, continuity)
+- prepare data for visualization and dashboards
+
+Script numbering reflects pipeline order and execution flow.
 
 ---
 
 ## Project Status
-   Dataset downloaded  
-   Importing into MySQL  
-   Business question queries in progress  
-   Dashboard build (Power BI / Tableau) planned
+- ✔ Dataset imported into MySQL  
+- ✔ Schema and clean views defined  
+- ✔ Core business queries implemented  
+- ✔ SQL → Python export pipeline complete  
+- ⏳ Charting and dashboard layer in progress  
 
-
+---
 
 ## Source
-Dataset: Olist Brazilian E-Commerce Public Dataset (Kaggle)
+Dataset: **Olist Brazilian E-Commerce Public Dataset (Kaggle)**
 
-> Note: This project is for learning and portfolio development. All data is public and non-proprietary.
-
+> This project is for learning and portfolio development. All data used is public and non-proprietary.
