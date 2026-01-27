@@ -1,64 +1,104 @@
-# Data Analysis Practice Repository
+# Data Analysis Portfolio & Practice Repository
 
 ## Overview
-This repository contains my **hands-on data analysis practice work**, primarily focused on **SQL** and **relational database concepts**, with supporting analysis and documentation.
+This repository contains my **hands-on data analysis work**, focused on **SQL, relational databases, and analytical pipelines**, with supporting Python scripts, QA checks, and documentation.
 
-The projects here are part of a **deliberate skill-polishing effort**, following along with a public YouTube tutorial series while:
-- Writing queries myself
-- Adjusting schemas where appropriate
-- Applying real-world reasoning from prior analyst experience
-- Version-controlling all work for clarity and reproducibility
+The projects here reflect a **deliberate skill-refresh and portfolio-building effort**, emphasizing:
+- clean, readable SQL
+- realistic business questions
+- reproducible workflows
+- transparent reasoning and validation
 
-This repository is intended to demonstrate **how I think with data**, not just final outputs.
-
----
-
-## Purpose of This Repository
-- Refresh and strengthen SQL fundamentals (joins, aggregations, filtering)
-- Rebuild analyst fluency after time away from academic SQL work
-- Practice professional workflows (scripts, Git, documentation)
-- Create transparent, reviewable artifacts suitable for discussion with potential employers
-
-While the structure and datasets are guided by a tutorial, **all SQL is typed, run, and reasoned through manually**, with notes and adjustments based on best practices.
+Rather than showcasing only final results, this repository is designed to demonstrate **how I think through data problems**, structure analysis, and validate outputs.
 
 ---
 
-## Current Focus Areas
-- Relational database design
-- INNER, LEFT, and OUTER join behavior
-- Translating business questions into SQL queries
-- Writing readable, maintainable SQL scripts
-- Using Git for versioned analytical work
+## What This Repository Demonstrates
+- Strong SQL fundamentals (joins, aggregations, filtering, window-style logic)
+- Translating business questions into structured queries
+- Building **clean semantic views** for downstream analytics
+- Lightweight but meaningful **data quality checks**
+- Professional workflow habits (Git, documentation, reproducibility)
+- SQL → Python handoff for analysis and visualization
+
+Some datasets and structures are inspired by public tutorials or sample datasets; however, **all queries, scripts, and analytical decisions are written and reasoned through manually**, with adjustments based on real-world analyst experience.
+
+---
+
+## Project Highlights
+
+### 🟦 Parks & Recreation (SQL Fundamentals)
+A lightweight, fictional dataset used to:
+- practice core SQL concepts
+- reinforce join behavior and aggregations
+- translate informal questions into structured queries
+
+This project emphasizes **query clarity and correctness** rather than scale.
+
+### 🟩 Olist (E-commerce Analytics Pipeline)
+A larger, real-world e-commerce dataset used to build:
+- clean relational schemas
+- analytics-focused indexes
+- semantic “clean” views (`v_*_clean`)
+- monthly trend analysis
+- Python-based export, QA, and charting workflows
+
+This project more closely reflects **production-style analytics work**, including:
+- schema setup
+- data validation
+- time-series trend analysis
+- SQL → Python handoff
 
 ---
 
 ## Repository Structure
 ```
-DData_Analysis/
+Data_Analysis/
 ├── Parks_Rec/
 │   ├── scripts/
-│   │   └── pnr.sql                    # Database creation + seed data
-│   ├── queries/                       # Practice + analysis queries
-│   │   ├── where.sql                  # Filtering patterns using WHERE clauses
-│   │   ├── group.sql                  # Aggregations using GROUP BY + ORDER BY
-│   │   ├── joins.sql                  # Join practice across related tables
-│   │   ├── case.sql                   # CASE statements + conditional logic
-│   │   ├── subs.sql                   # Subquery practice
-│   │   └── questions.sql              # Business-question style queries
-│   ├── notes.md                       # Observations + learning notes
-│   └── README.md                      # Project overview
+│   │   └── pnr.sql
+│   ├── queries/
+│   │   ├── where.sql
+│   │   ├── group.sql
+│   │   ├── joins.sql
+│   │   ├── case.sql
+│   │   ├── subs.sql
+│   │   └── questions.sql
+│   ├── notes.md
+│   └── README.md
 │
 ├── olist/
-│   ├── raw_data/                      # Original Kaggle CSVs (ignored by git)
-│   ├── scripts/                       # Schema + import + view setup scripts
-│   │   ├── 00_dev_reset_schema.sql    # DEV reset (drop/recreate schema)
-│   │   ├── 01_create_schema.sql       # Table creation
-│   │   ├── 02_create_indexes.sql      # Indexes for analytics joins
-│   │   ├── 03_import_data.sql         # CSV import into MySQL
-│   │   └── 04_clean_views.sql         # Clean semantic views (v_*_clean)
-│   ├── queries/                       # Business-question queries (portfolio-ready)
-│   │   ├── 01_orders_per_month.sql    # Orders trend + delivered rate
-│   │   └── 02_revenue_per_month.sql   # Revenue trend (payments-based)
-│   └── README.md                      # Dataset overview + goals
+│   ├── raw_data/
+│   ├── scripts/
+│   │   ├── 00_dev_reset_schema.sql
+│   │   ├── 01_create_schema.sql
+│   │   ├── 02_create_indexes.sql
+│   │   ├── 03_import_data.sql
+│   │   └── 04_clean_views.sql
+│   ├── queries/
+│   │   ├── 01_orders_per_month.sql
+│   │   └── 02_revenue_per_month.sql
+│   ├── python/
+│   │   ├── scripts/
+│   │   └── outputs/
+│   └── README.md
 │
-└── README.md                          # Main repo overview
+└── README.md
+```
+
+---
+
+## How to Use This Repository
+- SQL scripts are written for **MySQL 8.0.44**
+- Python scripts assume a local virtual environment and `.env`-based DB credentials
+- Projects are designed to be read **top-down**, following script numbering where present
+
+Each project README provides dataset-specific context and goals.
+
+---
+
+## Notes on Style & Intent
+- Script numbering is intentional and reflects pipeline order
+- Documentation favors clarity over verbosity
+- QA checks are included to surface issues early, not to block execution
+- This repository prioritizes **thinking, structure, and validation** over flashy visuals
