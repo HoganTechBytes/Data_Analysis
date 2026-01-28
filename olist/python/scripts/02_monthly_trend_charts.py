@@ -102,7 +102,7 @@ def chart_revenue_per_month(df_rev: pd.DataFrame) -> Path:
     required = ['month', 'revenue']
     missing = [c for c in required if c not in df_rev.columns]
     if missing:
-        raise ValueError(f'df_rev missing required column: {missing}')
+        raise ValueError(f'df_rev missing required columns: {missing}')
     
     out_path = CHART_DIR / '01_revenue_per_month.png'
 
@@ -112,6 +112,57 @@ def chart_revenue_per_month(df_rev: pd.DataFrame) -> Path:
     ax.set_xlabel('Month')
     ax.set_ylabel('Revenue')
 
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+    print(f'Saved chart: {out_path}')
+    return out_path
+
+
+def chart_orders_and_delivery_rate(df_orders: pd.DataFrame) -> Path:
+    """
+        Create and save a two-panel chart:
+        1) total orders per month
+        2) delivered rate (%) per month
+
+        :param df_orders: Orders DataFrame containing 'month', 'total_orders', 'delivered_rate_pct'
+        :type df_orders: pd.DataFrame
+        :return: Path to the saved chart image
+        :rtype: Path
+    """
+
+    required = ['month', 'total_orders', 'delivered_rate_pct']
+    missing = [c for c in required if c not in df_orders.columns]
+    if missing:
+        raise ValueError(f'df_orders missing required columns: {missing}')
+
+    # Filter out extremely sparse months (avoid misleading cliff-drops)
+    df = df_orders.copy()
+    df = df[df['total_orders'] >= 100]
+
+    dropped = len(df_orders) - len(df)
+    if dropped:
+        print(f'[QA NOTE] orders chart: dropped {dropped} sparse month rows (total_orders < 100).')
+
+    out_path = CHART_DIR / '02_orders_and_delivered_rate.png'
+
+    fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=True)
+
+    # Panel 1: Orders
+    ax1.plot(df['month'], df['total_orders'])
+    ax1.set_title('Orders per Month')
+    ax1.set_ylabel('Total Orders')
+
+    # Panel 2: Delivered rate
+    ax2.plot(df['month'], df['delivered_rate_pct'])
+    ax2.set_title('Delivered Rate per Month')
+    ax2.set_ylabel('Delivered Rate (%)')
+    ax2.set_xlabel('Month')
+    ax2.set_ylim(0, 100)
+
+    fig.suptitle('Orders and Delivery Performance (Monthly)', y=0.98)
     fig.autofmt_xdate()
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
@@ -138,8 +189,9 @@ def main() -> None:
     df_rev = add_month(df_rev)
     df_review = add_month(df_review)
     df_late = add_month(df_late)
-    
+
     chart_revenue_per_month(df_rev)
+    chart_orders_and_delivery_rate(df_orders)
 
     print('Loaded:')
     print('orders:', df_orders.shape, 'cols:', list(df_orders.columns))
