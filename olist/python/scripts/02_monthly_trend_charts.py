@@ -8,15 +8,14 @@
 """
 
 from __future__ import annotations
-
 from pathlib import Path
-
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 # ============================================================
 # Path configuration
-# Anchor all paths to this script location (VS Code / CLI safe)
+# Anchor all paths to this script location 
 # ============================================================
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -90,6 +89,38 @@ def add_month(df: pd.DataFrame, col: str = 'purchase_month') -> pd.DataFrame:
     return out
 
 
+def chart_revenue_per_month(df_rev: pd.DataFrame) -> Path:
+    """
+        Create and save a revenue-per-month line chart.
+
+        :param df_rev: Revenue DataFrame containing 'month' and 'revenue'
+        :type df_rev: pd.DataFrame
+        :return: Path to the saved chart image
+        :rtype: Path
+    """
+
+    required = ['month', 'revenue']
+    missing = [c for c in required if c not in df_rev.columns]
+    if missing:
+        raise ValueError(f'df_rev missing required column: {missing}')
+    
+    out_path = CHART_DIR / '01_revenue_per_month.png'
+
+    fig, ax = plt.subplots()
+    ax.plot(df_rev['month'], df_rev['revenue'])
+    ax.set_title('Revenue per Month (Delivered Orders)')
+    ax.set_xlabel('Month')
+    ax.set_ylabel('Revenue')
+
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+    print(f'Saved chart: {out_path}')
+    return out_path
+
+
 def main() -> None:
     """
         Load trend pack CSVs and print basic sanity info.
@@ -107,6 +138,8 @@ def main() -> None:
     df_rev = add_month(df_rev)
     df_review = add_month(df_review)
     df_late = add_month(df_late)
+    
+    chart_revenue_per_month(df_rev)
 
     print('Loaded:')
     print('orders:', df_orders.shape, 'cols:', list(df_orders.columns))
