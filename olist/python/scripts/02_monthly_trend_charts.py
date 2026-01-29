@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 # ============================================================
 # Path configuration
-# Anchor all paths to this script location 
+# Anchor all paths to this script location
 # ============================================================
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -50,6 +50,7 @@ def load_csv(name: str) -> pd.DataFrame:
         :rtype: pd.DataFrame
         :raises FileNotFoundError: If the CSV does not exist
     """
+
     path = CSV_DIR / name
     if not path.exists():
         raise FileNotFoundError(
@@ -103,7 +104,7 @@ def chart_revenue_per_month(df_rev: pd.DataFrame) -> Path:
     missing = [c for c in required if c not in df_rev.columns]
     if missing:
         raise ValueError(f'df_rev missing required columns: {missing}')
-    
+
     out_path = CHART_DIR / '01_revenue_per_month.png'
 
     fig, ax = plt.subplots()
@@ -172,6 +173,51 @@ def chart_orders_and_delivery_rate(df_orders: pd.DataFrame) -> Path:
     return out_path
 
 
+def chart_late_delivery_rate(df_late: pd.DataFrame) -> Path:
+    """
+        Create and save a late-delivery-rate trend chart.
+
+        :param df_late: DataFrame containing 'month', 'delivered_orders',
+                        and 'late_delivery_rate_pct'
+        :type df_late: pd.DataFrame
+        :return: Path to the saved chart image
+        :rtype: Path
+    """
+
+    required = ['month', 'delivered_orders', 'late_delivery_rate_pct']
+    missing = [c for c in required if c not in df_late.columns]
+    if missing:
+        raise ValueError(f'df_late missing required columns: {missing}')
+
+    # Filter extremely sparce months
+    df = df_late.copy()
+    df = df[df['delivered_orders'] >= 100]
+
+    dropped = len(df_late) - len(df)
+    if dropped:
+        print(
+            f'[QA Note] late delivery chart: dropped {dropped} sparse month rows '
+            '(delivered_orders < 100).'
+        )
+
+    out_path = CHART_DIR / '03_late_delivery_rate.png'
+
+    fig, ax = plt.subplots()
+    ax.plot(df['month'], df['late_delivery_rate_pct'])
+    ax.set_title('Late Delivery Rate per Month')
+    ax.set_xlabel('Month')
+    ax.set_ylabel('Late Delivery Rate (%)')
+    ax.set_ylim(0, 100)
+
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+    print(f'Saved chart: {out_path}')
+    return out_path
+
+
 def main() -> None:
     """
         Load trend pack CSVs and print basic sanity info.
@@ -192,6 +238,7 @@ def main() -> None:
 
     chart_revenue_per_month(df_rev)
     chart_orders_and_delivery_rate(df_orders)
+    chart_late_delivery_rate(df_late)
 
     print('Loaded:')
     print('orders:', df_orders.shape, 'cols:', list(df_orders.columns))
