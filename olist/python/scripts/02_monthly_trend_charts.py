@@ -196,7 +196,7 @@ def chart_late_delivery_rate(df_late: pd.DataFrame) -> Path:
     dropped = len(df_late) - len(df)
     if dropped:
         print(
-            f'[QA Note] late delivery chart: dropped {dropped} sparse month rows '
+            f'[QA NOTE] late delivery chart: dropped {dropped} sparse month rows '
             '(delivered_orders < 100).'
         )
 
@@ -216,6 +216,85 @@ def chart_late_delivery_rate(df_late: pd.DataFrame) -> Path:
 
     print(f'Saved chart: {out_path}')
     return out_path
+
+def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
+    """
+        Create and save a two-line chart comparing average review score:
+        - on-time deliveries (is_late = 0)
+        - late deliveries (is_late = 1)
+
+        Uses only months where both groups have enough review volume for stability.
+
+        :param df_review: Review DataFrame containing 'month', 'is_late',
+                          'review_count', and 'avg_review_score'
+        :type df_review: pd.DataFrame
+        :return: Path to the saved chart image
+        :rtype: Path
+    """
+
+    required = ['month', 'is_late', 'review_count', 'avg_review_score']
+    missing = [c for c in required if c not in df_review.columns]
+    if missing:
+        raise ValueError(f'df_review missing required columns: {missing}')
+
+    # Pivot into two series: on-time and late
+    pivot = df_review.pivot_table(
+        index='month',
+        columns='is_late',
+        values=['avg_review_score', 'review_count'],
+        aggfunc='first'
+    )
+
+    # Flatten columns for easier access (0 is on-time, 1 is late)
+    pivot.columns = [f'{metric}_late_{int(is_late)}' for metric, is_late in pivot.columns]
+    pivot = pivot.sort_index()
+
+    # Require both groups to exist
+    needed_cols = [
+        'avg_review_score_late_0', 'avg_review_score_late_1',
+        'review_count_late_0', 'review_count_late_1'
+    ]
+    missing2 = [c for c in needed_cols if c not in pivot.columns]
+    if missing2:
+        raise ValueError(f'review pivot missing required columns: {missing2}')
+
+    # Filter out low-volume months for stability
+    min_reviews = 30
+    before = len(pivot)
+
+    mask = (
+        (pivot['review_count_late_0'] >= min_reviews) &
+        (pivot['review_count_late_1'] >= min_reviews)
+    )
+
+    pivot2 = pivot[mask].copy()
+
+    dropped = before - len(pivot2)
+    if dropped:
+        print(f'[QA NOTE] review score chart: dropped {dropped} months where either group '
+              f'had review_count < {min_reviews}.'
+             )
+
+    out_path = CHART_DIR / '04_review_score_late_vs_on_time.png'
+
+    fig, ax = plt.subplots()
+    ax.plot(pivot2.index, pivot2['avg_review_score_late_0'], label='On-time')
+    ax.plot(pivot2.index, pivot2['avg_review_score_late_1'], label='Late')
+
+    ax.set_title('Average Review Score: Late vs On-time Deliveries')
+    ax.set_xlabel('Month')
+    ax.set_ylabel('Average Review Score')
+    ax.set_ylim(1, 5)
+    ax.legend()
+
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+    print(f'Saved chart: {out_path}')
+    return out_path
+
 
 
 def main() -> None:
@@ -239,6 +318,7 @@ def main() -> None:
     chart_revenue_per_month(df_rev)
     chart_orders_and_delivery_rate(df_orders)
     chart_late_delivery_rate(df_late)
+    chart_review_score_late_vs_on_time(df_review)
 
     print('Loaded:')
     print('orders:', df_orders.shape, 'cols:', list(df_orders.columns))
