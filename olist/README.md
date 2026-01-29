@@ -117,6 +117,25 @@ Results are exported and validated using Python scripts that:
 
 Script numbering reflects pipeline order and execution flow.
 
+### Charts & Insights
+
+The Python charting layer generates **versioned, reproducible PNG charts** committed
+directly to the repository for review.
+
+Current charts include:
+- Revenue per month (delivered orders only)
+- Orders vs delivered rate trends
+- Late delivery rate over time
+- Average review score: late vs on-time deliveries
+
+Each chart:
+- Applies minimum-volume thresholds to avoid misleading sparsity
+- Logs QA notes when data is filtered
+- Emits concise, text-based insights alongside visual output
+
+Example insight:
+> Late deliveries score on average ~1.6 points lower than on-time deliveries across stable months.
+
 ---
 
 ## Project Status
@@ -124,7 +143,9 @@ Script numbering reflects pipeline order and execution flow.
 - ✔ Schema and clean views defined  
 - ✔ Core business queries implemented  
 - ✔ SQL → Python export pipeline complete  
-- ⏳ Charting and dashboard layer in progress  
+- ✔ Charting pipeline implemented (Python / Matplotlib)  
+- ✔ QA-gated trend visualizations generated and committed
+- ⏳ Dashboard layer (Power BI / Excel / notebook) optional / future  
 
 ---
 
