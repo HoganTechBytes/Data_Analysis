@@ -292,6 +292,30 @@ def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
 
+    # =====================================================================
+    # Insight: review score gap
+    # =====================================================================
+
+    if pivot2.empty:
+        print('[QA WARNING] review score chart: no months met stability threshold; '
+              'skipping insight calc.')
+    else:
+        pivot2['review_score_delta'] = (
+            pivot2['avg_review_score_late_0'] -
+            pivot2['avg_review_score_late_1']
+        )
+
+        avg_delta = pivot2['review_score_delta'].mean()
+        min_delta = pivot2['review_score_delta'].min()
+        max_delta = pivot2['review_score_delta'].max()
+
+        print(
+            f'[INSIGHT] Late deliveries score on average {avg_delta:.2f} points lower '
+            'than on-time deliveries '
+            f'(range {min_delta:.2f}–{max_delta:.2f}, across {len(pivot2)} stable months; '
+            f'min_reviews={min_reviews}).'
+            )
+
     print(f'Saved chart: {out_path}')
     return out_path
 
