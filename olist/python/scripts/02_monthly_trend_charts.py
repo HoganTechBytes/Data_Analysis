@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,import-error
 
 """
     Monthly Trend Charts (Olist)
@@ -13,10 +13,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# ============================================================
+# =====================================================================================
 # Path configuration
 # Anchor all paths to this script location
-# ============================================================
+# =====================================================================================
 
 SCRIPT_PATH = Path(__file__).resolve()
 
@@ -25,6 +25,7 @@ PROJECT_ROOT = SCRIPT_PATH.parents[1]
 
 CSV_DIR = PROJECT_ROOT / 'outputs' / 'csv'
 CHART_DIR = PROJECT_ROOT / 'outputs' / 'charts'
+REPORT_PATH = PROJECT_ROOT / 'outputs' / 'trend_pack.md'
 
 
 def ensure_dirs() -> None:
@@ -60,7 +61,11 @@ def load_csv(name: str) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
-def add_month(df: pd.DataFrame, col: str = 'purchase_month') -> pd.DataFrame:
+def add_month(
+    df: pd.DataFrame,
+    col: str = 'purchase_month',
+    qa_notes: list[str] | None = None
+) -> pd.DataFrame:
     """
         Add a parsed datetime month column and sort by it.
 
@@ -71,6 +76,8 @@ def add_month(df: pd.DataFrame, col: str = 'purchase_month') -> pd.DataFrame:
         :type df: pd.DataFrame
         :param col: Name of the month column to parse
         :type col: str
+        :param qa_notes: Optional list to capture QA notes
+        :type qa_notes: list[str] | None
         :return: Copy of the DataFrame with a parsed `month` column added
         :rtype: pd.DataFrame
     """
@@ -82,7 +89,10 @@ def add_month(df: pd.DataFrame, col: str = 'purchase_month') -> pd.DataFrame:
 
     bad = int(out['month'].isna().sum())
     if bad:
-        print(f"[QA WARNING] add_month: '{col}' produced {bad:,} unparsed month values")
+        msg = f"[QA WARNING] add_month: '{col}' produced {bad:,} unparsed month values"
+        print(msg)
+        if qa_notes is not None:
+            qa_notes.append(msg)
 
     # Sort for stable charting
     out = out.sort_values('month', kind='mergesort')
@@ -90,7 +100,10 @@ def add_month(df: pd.DataFrame, col: str = 'purchase_month') -> pd.DataFrame:
     return out
 
 
-def chart_revenue_per_month(df_rev: pd.DataFrame) -> Path:
+def chart_revenue_per_month(
+    df_rev: pd.DataFrame,
+    insights: list[str] | None = None
+) -> Path:
     """
         Create and save a revenue-per-month line chart.
 
@@ -119,10 +132,24 @@ def chart_revenue_per_month(df_rev: pd.DataFrame) -> Path:
     plt.close(fig)
 
     print(f'Saved chart: {out_path}')
+
+    # Insight (so what)
+    if insights is not None and not df_rev.empty:
+        msg = (
+            '[INSIGHT][revenue] Revenue is the north-star trend line. Interpret month-to-month '
+            'changes alongside order volume and delivered rate to separate demand shifts from '
+            'fulfillment issues.'
+        )
+        print(msg)
+        insights.append(msg)
     return out_path
 
 
-def chart_orders_and_delivery_rate(df_orders: pd.DataFrame) -> Path:
+def chart_orders_and_delivery_rate(
+    df_orders: pd.DataFrame,
+    qa_notes: list[str],
+    insights: list[str] | None = None
+) -> Path:
     """
         Create and save a two-panel chart:
         1) total orders per month
@@ -130,6 +157,8 @@ def chart_orders_and_delivery_rate(df_orders: pd.DataFrame) -> Path:
 
         :param df_orders: Orders DataFrame containing 'month', 'total_orders', 'delivered_rate_pct'
         :type df_orders: pd.DataFrame
+        :param qa_notes: QA notes accumulator
+        :type qa_notes: list[str]
         :return: Path to the saved chart image
         :rtype: Path
     """
@@ -145,7 +174,12 @@ def chart_orders_and_delivery_rate(df_orders: pd.DataFrame) -> Path:
 
     dropped = len(df_orders) - len(df)
     if dropped:
-        print(f'[QA NOTE] orders chart: dropped {dropped} sparse month rows (total_orders < 100).')
+        msg = (
+            f'[QA NOTE] orders chart: dropped {dropped} sparse month rows '
+            '(total_orders < 100).'
+        )
+        print(msg)
+        qa_notes.append(msg)
 
     out_path = CHART_DIR / '02_orders_and_delivered_rate.png'
 
@@ -170,16 +204,31 @@ def chart_orders_and_delivery_rate(df_orders: pd.DataFrame) -> Path:
     plt.close(fig)
 
     print(f'Saved chart: {out_path}')
+
+    # Insight (so what)
+    if insights is not None and not df.empty:
+        msg = (
+            '[INSIGHT][orders] If order volume holds steady but delivered rate drops, '
+            'the story is likely operational (fulfillment/logistics) rather than demand.'
+        )
+        print(msg)
+        insights.append(msg)
     return out_path
 
 
-def chart_late_delivery_rate(df_late: pd.DataFrame) -> Path:
+def chart_late_delivery_rate(
+    df_late: pd.DataFrame,
+    qa_notes: list[str],
+    insights: list[str] | None = None
+) -> Path:
     """
         Create and save a late-delivery-rate trend chart.
 
         :param df_late: DataFrame containing 'month', 'delivered_orders',
                         and 'late_delivery_rate_pct'
         :type df_late: pd.DataFrame
+        :param qa_notes: QA notes accumulator
+        :type qa_notes: list[str]
         :return: Path to the saved chart image
         :rtype: Path
     """
@@ -189,16 +238,18 @@ def chart_late_delivery_rate(df_late: pd.DataFrame) -> Path:
     if missing:
         raise ValueError(f'df_late missing required columns: {missing}')
 
-    # Filter extremely sparce months
+    # Filter extremely sparse months
     df = df_late.copy()
     df = df[df['delivered_orders'] >= 100]
 
     dropped = len(df_late) - len(df)
     if dropped:
-        print(
+        msg = (
             f'[QA NOTE] late delivery chart: dropped {dropped} sparse month rows '
             '(delivered_orders < 100).'
         )
+        print(msg)
+        qa_notes.append(msg)
 
     out_path = CHART_DIR / '03_late_delivery_rate.png'
 
@@ -215,9 +266,24 @@ def chart_late_delivery_rate(df_late: pd.DataFrame) -> Path:
     plt.close(fig)
 
     print(f'Saved chart: {out_path}')
+
+    # Insight (so what)
+    if insights is not None and not df.empty:
+        msg = (
+            '[INSIGHT][late] Late delivery rate is a controllable experience metric. '
+            'Sustained increases often precede weaker reviews and repeat-purchase risk, '
+            'especially if concentrated in key sellers/categories.'
+        )
+        print(msg)
+        insights.append(msg)
     return out_path
 
-def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
+
+def chart_review_score_late_vs_on_time(
+    df_review: pd.DataFrame,
+    qa_notes: list[str],
+    insights: list[str]
+) -> Path:
     """
         Create and save a two-line chart comparing average review score:
         - on-time deliveries (is_late = 0)
@@ -228,6 +294,10 @@ def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
         :param df_review: Review DataFrame containing 'month', 'is_late',
                           'review_count', and 'avg_review_score'
         :type df_review: pd.DataFrame
+        :param qa_notes: QA notes accumulator
+        :type qa_notes: list[str]
+        :param insights: Insights accumulator
+        :type insights: list[str]
         :return: Path to the saved chart image
         :rtype: Path
     """
@@ -271,9 +341,12 @@ def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
 
     dropped = before - len(pivot2)
     if dropped:
-        print(f'[QA NOTE] review score chart: dropped {dropped} months where either group '
-              f'had review_count < {min_reviews}.'
-             )
+        msg = (
+            f'[QA NOTE] review score chart: dropped {dropped} months where either group '
+            f'had review_count < {min_reviews}.'
+        )
+        print(msg)
+        qa_notes.append(msg)
 
     out_path = CHART_DIR / '04_review_score_late_vs_on_time.png'
 
@@ -292,13 +365,17 @@ def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
 
-    # =====================================================================
+    # =====================================================================================
     # Insight: review score gap
-    # =====================================================================
+    # =====================================================================================
 
     if pivot2.empty:
-        print('[QA WARNING] review score chart: no months met stability threshold; '
-              'skipping insight calc.')
+        msg = (
+            '[QA WARNING] review score chart: no months met stability threshold; '
+            'skipping insight calc.'
+        )
+        print(msg)
+        qa_notes.append(msg)
     else:
         pivot2['review_score_delta'] = (
             pivot2['avg_review_score_late_0'] -
@@ -309,16 +386,171 @@ def chart_review_score_late_vs_on_time(df_review: pd.DataFrame) -> Path:
         min_delta = pivot2['review_score_delta'].min()
         max_delta = pivot2['review_score_delta'].max()
 
-        print(
+        insight = (
             f'[INSIGHT] Late deliveries score on average {avg_delta:.2f} points lower '
             'than on-time deliveries '
-            f'(range {min_delta:.2f}–{max_delta:.2f}, across {len(pivot2)} stable months; '
+            f'(range {min_delta:.2f}-{max_delta:.2f}, across {len(pivot2)} stable months; '
             f'min_reviews={min_reviews}).'
-            )
+        )
+        print(insight)
+        insights.append(insight)
 
     print(f'Saved chart: {out_path}')
     return out_path
 
+
+
+def build_trend_pack_report(
+    thresholds: list[str],
+    qa_notes: list[str],
+    insights: list[str]
+) -> list[str]:
+    """
+        Build the markdown report content for outputs/trend_pack.md.
+
+        Keep it simple:
+        - what we generated
+        - what filters we used
+        - what QA said
+        - what we learned (so what)
+    """
+
+    lines: list[str] = []
+    lines.append('# Olist Monthly Trend Pack')
+    lines.append('')
+    lines.append(
+        'Monthly trend pack using the Olist dataset. The goal is simple: QA-checked metrics, '
+        'clean charts, and clear, actionable takeaways.'
+    )
+    lines.append('')
+
+    lines.append('## Executive Summary')
+    if insights:
+        for i in insights[:2]:
+            lines.append(f'- {i}')
+    else:
+        lines.append('- (none)')
+    lines.append('')
+
+    lines.append('## Metric Definitions')
+    lines.append('- **Revenue (delivered only):** Sum of payment value for delivered orders')
+    lines.append('- **Delivered rate:** delivered_orders / total_orders')
+    lines.append('- **Late delivery rate:** late_delivered_orders / delivered_orders (is_late=1)')
+    lines.append('- **Review score (avg):** Average review score split into late vs on-time groups')
+    lines.append('')
+
+    lines.append('## Generated Charts')
+    lines.append('- outputs/charts/01_revenue_per_month.png')
+    lines.append('- outputs/charts/02_orders_and_delivered_rate.png')
+    lines.append('- outputs/charts/03_late_delivery_rate.png')
+    lines.append('- outputs/charts/04_review_score_late_vs_on_time.png')
+    lines.append('')
+
+    lines.append('## Thresholds / Filters')
+    if thresholds:
+        lines.extend([f'- {t}' for t in thresholds])
+    else:
+        lines.append('- (none)')
+    lines.append('')
+
+    lines.append('## QA Notes')
+    if qa_notes:
+        lines.extend([f'- {n}' for n in qa_notes])
+    else:
+        lines.append('- (none)')
+    lines.append('')
+
+    lines.append('# Chart Notes & Insights')
+    lines.append('')
+
+    def _insights_for(tag: str) -> list[str]:
+        return [i for i in insights if f'[{tag}]' in i] if insights else []
+
+    lines.append('## 01) Revenue per Month (Delivered Orders Only)')
+    lines.append('**Chart:** outputs/charts/01_revenue_per_month.png  ')
+    lines.append('**QA gate:** none (baseline visibility)')
+    lines.append('')
+    lines.append('**So what**')
+    rev = _insights_for('revenue')
+    if rev:
+        for i in rev:
+            lines.append(f'- {i}')
+    else:
+        lines.append('- (none)')
+    lines.append('')
+    lines.append('**Follow-up question**')
+    lines.append('- If revenue changes, is it driven by order volume, average order value, or payment mix?')
+    lines.append('')
+
+    lines.append('## 02) Orders per Month + Delivered Rate')
+    lines.append('**Chart:** outputs/charts/02_orders_and_delivered_rate.png  ')
+    lines.append('**QA gate:** total_orders >= 100')
+    lines.append('')
+    lines.append('**So what**')
+    ords = _insights_for('orders')
+    if ords:
+        for i in ords:
+            lines.append(f'- {i}')
+    else:
+        lines.append('- (none)')
+    lines.append('')
+    lines.append('**Follow-up question**')
+    lines.append('- When delivered rate dips, are those months concentrated in certain seller states or categories?')
+    lines.append('')
+
+    lines.append('## 03) Late Delivery Rate (Delivered Orders Only)')
+    lines.append('**Chart:** outputs/charts/03_late_delivery_rate.png  ')
+    lines.append('**QA gate:** delivered_orders >= 100')
+    lines.append('')
+    lines.append('**So what**')
+    late = _insights_for('late')
+    if late:
+        for i in late:
+            lines.append(f'- {i}')
+    else:
+        lines.append('- (none)')
+    lines.append('')
+    lines.append('**Follow-up question**')
+    lines.append('- Are late deliveries driven by specific sellers, shipping distance, or category handling time?')
+    lines.append('')
+
+    lines.append('## 04) Avg Review Score - Late vs On-Time')
+    lines.append('**Chart:** outputs/charts/04_review_score_late_vs_on_time.png  ')
+    lines.append('**QA gate:** min_reviews = 30 for both groups')
+    lines.append('')
+    lines.append('**So what**')
+    review_ins = [
+        i for i in insights
+        if '[INSIGHT]' in i and '[revenue]' not in i and '[orders]' not in i and '[late]' not in i
+    ]
+    if review_ins:
+        for i in review_ins:
+            lines.append(f'- {i}')
+    else:
+        lines.append('- (none)')
+    lines.append('')
+    lines.append('**Follow-up question**')
+    lines.append("- What's the review 'breakpoint' (e.g., after how many days late do reviews drop sharply)?")
+    lines.append('')
+
+    lines.append('## Reproducibility')
+    lines.append('- Source extract script: scripts/01_monthly_trend_pack.py')
+    lines.append('- Chart + report generator: scripts/02_monthly_trend_charts.py')
+    lines.append('- Outputs: outputs/charts/ and outputs/trend_pack.md')
+    lines.append('')
+
+    return lines
+
+def write_trend_pack_report(lines: list[str]) -> None:
+    """
+        Write a simple markdown trend pack report to outputs/trend_pack.md
+
+        return: None
+        :rtype: None
+    """
+
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text('\n'.join(lines).rstrip() + '\n', encoding='utf-8')
 
 
 def main() -> None:
@@ -330,19 +562,32 @@ def main() -> None:
     """
     ensure_dirs()
 
+    qa_notes: list[str] = []
+    insights: list[str] = []
+    thresholds: list[str] = []
+
     df_orders = load_csv('01_orders_per_month.csv')
     df_rev = load_csv('02_revenue_per_month.csv')
     df_review = load_csv('03_review_score_by_delivery.csv')
     df_late = load_csv('04_late_delivery_rate_by_month.csv')
-    df_orders = add_month(df_orders)
-    df_rev = add_month(df_rev)
-    df_review = add_month(df_review)
-    df_late = add_month(df_late)
 
-    chart_revenue_per_month(df_rev)
-    chart_orders_and_delivery_rate(df_orders)
-    chart_late_delivery_rate(df_late)
-    chart_review_score_late_vs_on_time(df_review)
+    df_orders = add_month(df_orders, qa_notes=qa_notes)
+    df_rev = add_month(df_rev, qa_notes=qa_notes)
+    df_review = add_month(df_review, qa_notes=qa_notes)
+    df_late = add_month(df_late, qa_notes=qa_notes)
+
+    chart_revenue_per_month(df_rev, insights)
+
+    thresholds.extend([
+        'Orders chart: total_orders >= 100',
+        'Late delivery chart: delivered_orders >= 100',
+        'Review chart: min_reviews = 30 for both late/on-time',
+        'Revenue chart: no min-volume filter applied',
+    ])
+
+    chart_orders_and_delivery_rate(df_orders, qa_notes, insights)
+    chart_late_delivery_rate(df_late, qa_notes, insights)
+    chart_review_score_late_vs_on_time(df_review, qa_notes, insights)
 
     print('Loaded:')
     print('orders:', df_orders.shape, 'cols:', list(df_orders.columns))
@@ -355,6 +600,14 @@ def main() -> None:
     print('revenue:', df_rev['month'].min(), '→', df_rev['month'].max())
     print('review:', df_review['month'].min(), '→', df_review['month'].max())
     print('late:', df_late['month'].min(), '→', df_late['month'].max())
+
+    # =====================================================================================
+    # Trend pack report (markdown)
+    # =====================================================================================
+
+    lines = build_trend_pack_report(thresholds, qa_notes, insights)
+    write_trend_pack_report(lines)
+    print(f'Saved report: {REPORT_PATH}')
 
     # Quick peek
     print('\nHead checks:')
