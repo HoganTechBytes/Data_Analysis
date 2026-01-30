@@ -3,7 +3,7 @@
 ## Overview
 This project is based on the **Olist Brazilian E-Commerce Public Dataset** (Kaggle) and is used to practice **real-world analytics workflows** on a multi-table relational dataset.
 
-The focus is not only on writing SQL queries, but on:
+The focus is not only on writing SQL queries, but on building a complete analytics workflow:
 - designing analytics-friendly schemas
 - creating clean semantic views
 - validating results with lightweight QA checks
@@ -16,6 +16,17 @@ The dataset supports realistic business questions around:
 - payment behavior
 
 ---
+
+## Primary Deliverables
+
+This project produces a **monthly trend pack** intended for direct review.
+
+Key outputs:
+- `python/outputs/trend_pack.md` — consolidated monthly findings, QA notes, and insights
+- `python/outputs/charts/` — versioned PNG charts referenced by the trend pack
+
+These outputs are committed intentionally as portfolio artifacts and can be reviewed
+without running the code.
 
 ## Dataset Context
 The Olist dataset includes multiple related tables covering the full e-commerce lifecycle, including:
@@ -119,8 +130,8 @@ Script numbering reflects pipeline order and execution flow.
 
 ### Charts & Insights
 
-The Python charting layer generates **versioned, reproducible PNG charts** committed
-directly to the repository for review.
+The Python charting layer generates **versioned, reproducible PNG charts** that are
+committed directly to the repository as portfolio artifacts.
 
 Current charts include:
 - Revenue per month (delivered orders only)
@@ -136,6 +147,10 @@ Each chart:
 Example insight:
 > Late deliveries score on average ~1.6 points lower than on-time deliveries across stable months.
 
+Metric coverage varies slightly by chart due to delivered-only filters and review
+availability, which is documented in QA notes within the trend pack.
+
+
 ---
 
 ## Project Status
@@ -148,6 +163,18 @@ Example insight:
 - ⏳ Dashboard layer (Power BI / Excel / notebook) optional / future  
 
 ---
+
+## How to Run (Optional)
+
+This project uses a local Python virtual environment.
+
+High-level flow:
+1. Create and activate a `.venv`
+2. Install dependencies from `requirements.txt`
+3. Run SQL extracts against the MySQL Olist database
+4. Execute the Python trend pack scripts
+
+The primary review artifacts are already committed and do not require local execution.
 
 ## Source
 Dataset: **Olist Brazilian E-Commerce Public Dataset (Kaggle)**
