@@ -479,7 +479,8 @@ def build_trend_pack_report(
         lines.append('- (none)')
     lines.append('')
     lines.append('**Follow-up question**')
-    lines.append('- If revenue changes, is it driven by order volume, average order value, or payment mix?')
+    lines.append('- If revenue changes, is it driven by order volume, average order value, '
+                 'or payment mix?')
     lines.append('')
 
     lines.append('## 02) Orders per Month + Delivered Rate')
@@ -495,7 +496,8 @@ def build_trend_pack_report(
         lines.append('- (none)')
     lines.append('')
     lines.append('**Follow-up question**')
-    lines.append('- When delivered rate dips, are those months concentrated in certain seller states or categories?')
+    lines.append('- When delivered rate dips, are those months concentrated in certain seller '
+                 'states or categories?')
     lines.append('')
 
     lines.append('## 03) Late Delivery Rate (Delivered Orders Only)')
@@ -511,7 +513,8 @@ def build_trend_pack_report(
         lines.append('- (none)')
     lines.append('')
     lines.append('**Follow-up question**')
-    lines.append('- Are late deliveries driven by specific sellers, shipping distance, or category handling time?')
+    lines.append('- Are late deliveries driven by specific sellers, shipping distance, or '
+                 'category handling time?')
     lines.append('')
 
     lines.append('## 04) Avg Review Score - Late vs On-Time')
@@ -530,7 +533,8 @@ def build_trend_pack_report(
         lines.append('- (none)')
     lines.append('')
     lines.append('**Follow-up question**')
-    lines.append("- What's the review 'breakpoint' (e.g., after how many days late do reviews drop sharply)?")
+    lines.append("- What's the review 'breakpoint' (e.g., after how many days late do reviews drop "
+                 "sharply)?")
     lines.append('')
 
     lines.append('## Reproducibility')
