@@ -586,16 +586,6 @@ def main() -> None:
     insights: list[str] = []
     thresholds: list[str] = []
 
-    # df_orders = load_csv('01_orders_per_month.csv')
-    # df_rev = load_csv('02_revenue_per_month.csv')
-    # df_review = load_csv('03_review_score_by_delivery.csv')
-    # df_late = load_csv('04_late_delivery_rate_by_month.csv')
-
-    # df_orders = add_month(df_orders, qa_notes=qa_notes)
-    # df_rev = add_month(df_rev, qa_notes=qa_notes)
-    # df_review = add_month(df_review, qa_notes=qa_notes)
-    # df_late = add_month(df_late, qa_notes=qa_notes)
-
     data = load_trend_pack_data(qa_notes)
 
     chart_revenue_per_month(data['revenue'], insights)
