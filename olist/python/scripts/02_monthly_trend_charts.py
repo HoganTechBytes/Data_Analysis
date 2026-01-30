@@ -399,6 +399,22 @@ def chart_review_score_late_vs_on_time(
     return out_path
 
 
+def load_trend_pack_data(qa_notes: list[str]) -> dict[str, pd.DataFrame]:
+    """
+    Load trend pack CSVs and add the parsed month column.
+    """
+    data = {
+        'orders': load_csv('01_orders_per_month.csv'),
+        'revenue': load_csv('02_revenue_per_month.csv'),
+        'review': load_csv('03_review_score_by_delivery.csv'),
+        'late': load_csv('04_late_delivery_rate_by_month.csv')
+    }
+
+    for key, df in data.items():
+        data[key] = add_month(df, qa_notes=qa_notes)
+
+    return data
+
 
 def build_trend_pack_report(
     thresholds: list[str],
@@ -570,17 +586,19 @@ def main() -> None:
     insights: list[str] = []
     thresholds: list[str] = []
 
-    df_orders = load_csv('01_orders_per_month.csv')
-    df_rev = load_csv('02_revenue_per_month.csv')
-    df_review = load_csv('03_review_score_by_delivery.csv')
-    df_late = load_csv('04_late_delivery_rate_by_month.csv')
+    # df_orders = load_csv('01_orders_per_month.csv')
+    # df_rev = load_csv('02_revenue_per_month.csv')
+    # df_review = load_csv('03_review_score_by_delivery.csv')
+    # df_late = load_csv('04_late_delivery_rate_by_month.csv')
 
-    df_orders = add_month(df_orders, qa_notes=qa_notes)
-    df_rev = add_month(df_rev, qa_notes=qa_notes)
-    df_review = add_month(df_review, qa_notes=qa_notes)
-    df_late = add_month(df_late, qa_notes=qa_notes)
+    # df_orders = add_month(df_orders, qa_notes=qa_notes)
+    # df_rev = add_month(df_rev, qa_notes=qa_notes)
+    # df_review = add_month(df_review, qa_notes=qa_notes)
+    # df_late = add_month(df_late, qa_notes=qa_notes)
 
-    chart_revenue_per_month(df_rev, insights)
+    data = load_trend_pack_data(qa_notes)
+
+    chart_revenue_per_month(data['revenue'], insights)
 
     thresholds.extend([
         'Orders chart: total_orders >= 100',
@@ -589,21 +607,20 @@ def main() -> None:
         'Revenue chart: no min-volume filter applied',
     ])
 
-    chart_orders_and_delivery_rate(df_orders, qa_notes, insights)
-    chart_late_delivery_rate(df_late, qa_notes, insights)
-    chart_review_score_late_vs_on_time(df_review, qa_notes, insights)
+    chart_orders_and_delivery_rate(data['orders'], qa_notes, insights)
+    chart_late_delivery_rate(data['late'], qa_notes, insights)
+    chart_review_score_late_vs_on_time(data['review'], qa_notes, insights)
 
-    print('Loaded:')
-    print('orders:', df_orders.shape, 'cols:', list(df_orders.columns))
-    print('revenue:', df_rev.shape, 'cols:', list(df_rev.columns))
-    print('review:', df_review.shape, 'cols:', list(df_review.columns))
-    print('late:', df_late.shape, 'cols:', list(df_late.columns))
+    print('orders:', data['orders'].shape, 'cols:', list(data['orders'].columns))
+    print('revenue:', data['revenue'].shape, 'cols:', list(data['revenue'].columns))
+    print('review:', data['review'].shape, 'cols:', list(data['review'].columns))
+    print('late:', data['late'].shape, 'cols:', list(data['late'].columns))
 
     print('\nMonth parse check (min/max):')
-    print('orders:', df_orders['month'].min(), '→', df_orders['month'].max())
-    print('revenue:', df_rev['month'].min(), '→', df_rev['month'].max())
-    print('review:', df_review['month'].min(), '→', df_review['month'].max())
-    print('late:', df_late['month'].min(), '→', df_late['month'].max())
+    print('orders:', data['orders']['month'].min(), '→', data['orders']['month'].max())
+    print('revenue:', data['revenue']['month'].min(), '→', data['revenue']['month'].max())
+    print('review:', data['review']['month'].min(), '→', data['review']['month'].max())
+    print('late:', data['late']['month'].min(), '→', data['late']['month'].max())
 
     # =====================================================================================
     # Trend pack report (markdown)
@@ -615,10 +632,11 @@ def main() -> None:
 
     # Quick peek
     print('\nHead checks:')
-    print(df_orders.head(2))
-    print(df_rev.head(2))
-    print(df_review.head(2))
-    print(df_late.head(2))
+    print(data['orders'].head(2))
+    print(data['revenue'].head(2))
+    print(data['review'].head(2))
+    print(data['late'].head(2))
+
 
 
 if __name__ == '__main__':
