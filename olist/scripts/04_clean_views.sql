@@ -1,15 +1,16 @@
-/*
-Olist (Kaggle) – Clean Views
-
-Purpose:
-- Provide analysis-friendly column names and light standardization
-- Keep raw imported tables unchanged
-
-Usage:
-- Write portfolio queries against these views (prefixed with v_)
-
-Kaggle has known data quality issues, such as typos in column names.
-*/
+-- =======================================================================================
+--
+-- Olist (Kaggle) – Clean Views
+--
+-- Purpose:
+--      Provide analysis-friendly column names and light standardization
+--      Keep raw imported tables unchanged
+--
+-- Usage:
+--      Write portfolio queries against these views (prefixed with v_)
+--
+-- Kaggle has known data quality issues, such as typos in column names.
+-- =======================================================================================
 
 USE olist;
 
@@ -41,10 +42,14 @@ CREATE VIEW v_orders_clean AS
         order_delivered_customer_date,
         order_estimated_delivery_date,
 
+    -- -------------------------------------------------------------------------------
     -- Derived columns --
+    -- -------------------------------------------------------------------------------
+
     CASE
         WHEN order_delivered_customer_date IS NULL THEN NULL
-        ELSE TIMESTAMPDIFF(DAY, order_purchase_timestamp, order_delivered_customer_date)
+        ELSE TIMESTAMPDIFF(DAY, order_purchase_timestamp,
+                           order_delivered_customer_date)
     END AS delivery_days,
 
     CASE
@@ -66,7 +71,10 @@ CREATE VIEW v_order_items_clean AS
         price,
         freight_value,
 
+        -- ---------------------------------------------------------------------------
         -- Derived column --
+        -- ---------------------------------------------------------------------------
+        
         (price + freight_value) AS item_total
 FROM order_items;
 

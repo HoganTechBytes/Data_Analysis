@@ -1,16 +1,19 @@
-/*
-Olist (Kaggle) – CSV Import Script
-
-Expected folder structure:
-- raw_data/ (contains original Kaggle CSV files; ignored by git)
-
-Run from the project root:
-mysql --local-infile=1 -u <user> -p < scripts/03_import_data.sql
-*/
+-- =======================================================================================
+--  Olist (Kaggle) – CSV Import Script
+--
+--  Expected folder structure:
+--      raw_data/ (contains original Kaggle CSV files; ignored by git)
+--
+--  Run from the project root:
+--      mysql --local-infile=1 -u <user> -p < scripts/03_import_data.sql
+-- =======================================================================================
 
 USE olist;
 
+-- ---------------------------------------------------------------------------------------
 -- Recommended for imports
+-- ---------------------------------------------------------------------------------------
+
 SET sql_mode = '';
 SET foreign_key_checks = 0;
 

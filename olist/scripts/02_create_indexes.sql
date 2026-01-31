@@ -1,13 +1,13 @@
-/*
-Olist (Kaggle) – Index Creation Script
-
-Purpose:
-- Adds helpful indexes for joins and analytics queries
-
-Note:
-- Re-running this script will error if indexes already exist.
-- If you need a clean rebuild, run 00_dev_reset_schema.sql.
-*/
+-- =======================================================================================
+--  Olist (Kaggle) – Index Creation Script
+--
+--  Purpose:
+--      Adds helpful indexes for joins and analytics queries
+--
+--  Note:
+--      Re-running this script will error if indexes already exist.
+--      If you need a clean rebuild, run 00_dev_reset_schema.sql.
+-- =======================================================================================
 
 USE olist;
 
