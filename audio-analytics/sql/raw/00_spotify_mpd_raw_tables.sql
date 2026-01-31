@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS spotify_raw.mpd_slices(
     slice_label         text            NOT NULL,               -- e.g. '0-999'
     generated_on        timestamp,
     version             text,
-    source_file         text            NOT NULL                -- filename
+    source_file         text            NOT NULL,               -- filename
     loaded_at           timestamp       NOT NULL DEFAULT now(),
     UNIQUE (source_file)
 
@@ -68,13 +68,13 @@ CREATE TABLE IF NOT EXISTS spotify_raw.mpd_playlists_tracks(
 -- ----------------------------------------------------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS ix_mpd_tracks_track_uri
-    ON spotify_raw.mpd_playlist_tracks (track_uri);
+    ON spotify_raw.mpd_playlists_tracks (track_uri);
 
 CREATE INDEX IF NOT EXISTS ix_mpd_tracks_artist_uri
-    ON spotify_raw.mpd_playlist_tracks (artist_uri);
+    ON spotify_raw.mpd_playlists_tracks (artist_uri);
 
 CREATE INDEX IF NOT EXISTS ix_mpd_tracks_album_uri
-    ON spotify_raw.mpd_playlist_tracks (album_uri);
+    ON spotify_raw.mpd_playlists_tracks (album_uri);
 
 CREATE INDEX IF NOT EXISTS ix_mpd_playlists_slice_id
     ON spotify_raw.mpd_playlists (slice_id);
