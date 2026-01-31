@@ -1,9 +1,14 @@
 # Ignore raw datasets (large / reproducible from source)
 raw_data/
 **/raw_data/
+.raw/
+**/.raw
 
 # Ignore compressed data files
 *.zip
 *.gz
 *.tar
 *.tar.gz
+
+# Ignore venv
+.venv
